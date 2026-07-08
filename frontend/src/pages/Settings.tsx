@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyRound, Sparkles, ShieldCheck, Check, Trash2, Terminal } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -22,6 +22,16 @@ export function Settings() {
   const [apiKey, setApiKey] = useState(existing && !existingIsCli ? existing.apiKey : "");
   // 后端访问密钥（对应部署时的 VR_API_KEY）；本机自用不设鉴权时留空
   const [accessKey, setAccessKey] = useState(loadAccessKey());
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("use") !== "codex") return;
+    saveLlm({ provider: "cli-codex", baseURL: "", apiKey: "", model: "codex" });
+    setMode("subscription");
+    setCliId("codex");
+    toast.success("已接入本机 Codex CLI 订阅，后续 AI 按钮将走 Codex");
+    window.history.replaceState(null, "", "/settings");
+  }, []);
 
   const providerOf = (id: string): ProviderId => aiModels.find((m) => m.id === id)?.provider ?? "openai-compatible";
 

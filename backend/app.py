@@ -24,6 +24,7 @@ import gstock
 import newsradar
 import portfolio as pf
 import market
+import research
 
 app = FastAPI(title="Vibe-Research API", version="0.1.0")
 
@@ -43,10 +44,17 @@ app.add_middleware(
 # 可选鉴权：设了 VR_API_KEY 就要求所有 /api/* 带 `Authorization: Bearer <key>`
 #   （本地自托管不设=开放；公网部署务必设，否则别人能读你的持仓/调你的后端）。
 _API_KEY = os.environ.get("VR_API_KEY", "").strip()
+_PUBLIC_READONLY = os.environ.get("VR_PUBLIC_READONLY", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @app.middleware("http")
 async def _require_api_key(request: Request, call_next):
+    if (
+        _PUBLIC_READONLY
+        and request.url.path.startswith("/api/")
+        and (request.method not in {"GET", "OPTIONS"} or request.url.path == "/api/chat")
+    ):
+        return JSONResponse({"detail": "公开只读模式：该操作不可用"}, status_code=403)
     if (
         _API_KEY
         and request.method != "OPTIONS"
@@ -254,6 +262,15 @@ def global_stock(symbol: str = Query(..., min_length=1, max_length=16)):
         raise
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"美港股查询异常：{e}") from e
+
+
+@app.get("/api/research/library")
+def research_library(days: int = Query(220, ge=1, le=800), max_pages: int = Query(6, ge=1, le=20)):
+    """Winter 研报库：本地思考目录索引 + 东方财富最新行业研报，日期截止今天。"""
+    try:
+        return {"data": research.library(days=days, max_pages=max_pages)}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"研报库异常：{e}") from e
 
 
 @app.get("/api/indices")

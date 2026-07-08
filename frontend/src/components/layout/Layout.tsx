@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, Radar, LayoutGrid, Wallet, Settings, Search, NotebookPen,
   Moon, Sun, ChevronsLeft, ChevronsRight, LineChart, Github, UserRound,
-  Cog, Cpu, Database, Cable, Rocket, FlaskConical,
+  Cog, Cpu, Database, Cable, Rocket, FlaskConical, Snowflake, FileText, Layers3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -13,6 +13,8 @@ const REPO_URL = "https://github.com/simonlin1212/Vibe-Research";
 const SITE_URL = "https://www.simonlin.net"; // 作者主页
 
 const NAV = [
+  { to: "/winter", icon: Snowflake, label: "Winter 看板" },
+  { to: "/research-library", icon: FileText, label: "研报与评分" },
   { to: "/daily-review", icon: Activity, label: "每日复盘" },
   { to: "/intel", icon: Radar, label: "资讯雷达" },
   { to: "/sectors", icon: LayoutGrid, label: "板块中心" },
@@ -26,6 +28,7 @@ const NAV = [
 const SECTOR_LINKS = [
   { to: "/sectors/humanoid", icon: Cog, label: "人形机器人" },
   { to: "/sectors/ai-computing", icon: Cpu, label: "AI 算力" },
+  { to: "/sectors/upstream-materials", icon: Layers3, label: "上游材料" },
   { to: "/sectors/hbm", icon: Database, label: "HBM" },
   { to: "/sectors/cpo", icon: Cable, label: "光互联" },
   { to: "/sectors/business-space", icon: Rocket, label: "商业航天" },
@@ -50,15 +53,15 @@ export function Layout() {
       )}>
         {/* Brand */}
         <div className={cn("border-b border-border/50", collapsed ? "flex justify-center p-3" : "p-4")}>
-          <Link to="/daily-review" className={cn("flex items-center", collapsed ? "justify-center" : "gap-2")}>
+          <Link to="/winter" className={cn("flex items-center", collapsed ? "justify-center" : "gap-2")}>
             <LineChart className="h-6 w-6 shrink-0 text-primary text-glow" />
             {!collapsed && (
               <span className="text-lg font-extrabold tracking-tight">
-                Vibe-<span className="text-primary">Research</span>
+                Winter-<span className="text-primary">Research</span>
               </span>
             )}
           </Link>
-          {!collapsed && <p className="mt-1 text-[11px] text-muted-foreground">个人 AI 投研系统 · A股/美股/港股</p>}
+          {!collapsed && <p className="mt-1 text-[11px] text-muted-foreground">个人 AI 投研系统 · 旧看板已接入</p>}
         </div>
 
         {/* Nav */}

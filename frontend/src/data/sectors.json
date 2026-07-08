@@ -1,5 +1,5 @@
 {
-  "_comment": "板块·环节骨架（开源版单一来源）。零具体标的：nodes 只有产业链环节名。verified=true 者环节已核实（来自做透的板块）；false 者为占位，待实时核实补全（禁止靠模型记忆编）。用户可在本地 my-watchlist.json 挂自己的标的，不进仓库。",
+  "_comment": "板块与细分骨架。verified=true 表示已从旧 Vibe-Trading 看板或本地研报迁入；标的仅作研究索引，不构成投资建议。",
   "indices": {
     "aShare": ["上证指数", "深证成指", "创业板指", "沪深300"],
     "us": ["道琼斯", "纳斯达克", "标普500"]
@@ -16,13 +16,133 @@
     {
       "key": "ai-computing",
       "label": "AI 算力",
-      "tagline": "算力基建的产业链——芯片、光互连、封装、散热",
+      "tagline": "算力基建产业链：芯片、存储、光互联、先进封装、PCB、散热与上游材料",
       "hot": true,
       "verified": true,
-      "nodes": ["AI芯片", "光模块", "CPO光互连", "HBM存储", "先进封装", "PCB", "液冷散热"]
+      "nodes": ["算力芯片", "HBM", "光模块/CPO", "PCB/CCL", "液冷散热", "MLCC/被动元件", "玻璃基板", "上游卡口材料"],
+      "subSectors": [
+        {
+          "key": "compute-chip",
+          "label": "算力芯片",
+          "positioning": "训练与推理的核心计算单元，旧看板主线为国产替代、云厂自研 ASIC、推理算力与服务器 CPU 回暖。",
+          "barrier": "架构、先进制程、软件生态三重壁垒，国产替代受制程与生态约束。",
+          "serenity": [1.4, 0.8, 1.5, 1.4, 1.2, 0.6, 0.2],
+          "molecules": ["GPU/DCU", "ASIC", "服务器 CPU", "加速卡"],
+          "targets": ["海光信息(688041)", "芯原股份(688521)", "沐曦股份(688802)"]
+        },
+        {
+          "key": "hbm",
+          "label": "HBM",
+          "positioning": "高带宽内存决定 AI 芯片的内存墙上限，本体由海外三大原厂主导，A 股更多从设备、测试、材料侧参与。",
+          "barrier": "DRAM 制程、TSV 堆叠、先进封装与产能紧张共同构成高壁垒。",
+          "serenity": [1.6, 0.4, 1.4, 1.2, 1.2, 0.7, 0.4],
+          "molecules": ["HBM 本体", "混合键合/TCB 设备", "HBM 测试机", "GMC/球硅封装材料"],
+          "targets": ["拓荆科技(688072)", "长川科技(300604)", "联瑞新材(688300)", "华海诚科(688535)"]
+        },
+        {
+          "key": "optical-module",
+          "label": "光模块/CPO",
+          "positioning": "数据中心集群互联的光电转换核心，旧看板主线为 800G/1.6T、硅光与 CPO 迈向 0 到 1。",
+          "barrier": "模块侧国产全球领先，但更上游的光芯片、EML、InP 衬底仍是更硬卡口。",
+          "serenity": [1.0, 1.4, 1.3, 1.2, 1.2, 0.6, 0.2],
+          "molecules": ["高速光模块", "光芯片/EML", "InP 衬底", "硅光/CPO"],
+          "targets": ["中际旭创(300308)", "新易盛(300502)", "天孚通信(300394)", "源杰科技(688498)", "长光华芯(688048)"]
+        },
+        {
+          "key": "pcb",
+          "label": "PCB/CCL/载板",
+          "positioning": "承载芯片与器件的高速电路基板，AI 服务器拉动高端 PCB、CCL 涨价链、TGV 玻璃基板与 ABF 载板升级。",
+          "barrier": "高频高速材料、低损耗 CCL、ABF 载板和良率构成技术与产能壁垒。",
+          "serenity": [1.1, 1.2, 1.3, 1.2, 1.2, 0.7, 0.4],
+          "molecules": ["高端 PCB", "低损耗 CCL", "ABF 载板", "TGV 玻璃基板", "球形硅微粉"],
+          "targets": ["沪电股份(002463)", "胜宏科技(300476)", "生益科技(600183)", "联瑞新材(688300)"]
+        },
+        {
+          "key": "liquid-cooling",
+          "label": "液冷散热",
+          "positioning": "高功耗 AI 芯片与机柜的热管理，旧看板主线为全液冷时代、冷板/浸没式、单机价值量提升。",
+          "barrier": "工程集成、可靠性、交付与客户验证为主，物理卡口弱于芯片和材料。",
+          "serenity": [0.7, 1.4, 1.2, 1.2, 1.3, 0.9, 0.4],
+          "molecules": ["冷板", "浸没式液冷", "CDU", "热管理系统"],
+          "targets": ["银轮股份(002126)", "飞荣达(300602)", "曙光数创(920808)"]
+        },
+        {
+          "key": "mlcc",
+          "label": "MLCC/被动元件",
+          "positioning": "AI 服务器架构升级带动 MLCC 等被动元件量价提升，高端小型化高容仍由日系主导。",
+          "barrier": "陶瓷粉体、薄层化、一致性与高端产能构成中高壁垒。",
+          "serenity": [0.9, 0.9, 1.2, 1.0, 1.2, 0.9, 0.5],
+          "molecules": ["MLCC", "硅电容", "陶瓷粉体"],
+          "targets": ["三环集团(300408)", "风华高科(000636)"]
+        },
+        {
+          "key": "glass-substrate",
+          "label": "玻璃基板",
+          "positioning": "下一代先进封装载板平台，TGV 工艺、翘曲控制与良率仍处产业化早期。",
+          "barrier": "技术路线未定但工艺壁垒高，设备、材料、封装验证同步推进。",
+          "serenity": [1.3, 0.6, 1.0, 1.0, 1.0, 0.4, 0.9],
+          "molecules": ["TGV 玻璃通孔", "玻璃载板", "封装设备", "低翘曲材料"],
+          "targets": ["沃格光电(603773)", "雷曼光电(300162)"]
+        },
+        {
+          "key": "upstream-material",
+          "label": "上游卡口材料",
+          "positioning": "半导体与先进封装上游瓶颈材料，重点看电子特气、CMP、塑封料、球硅、靶材、ABF。",
+          "barrier": "纯度、一致性、长期认证和产能弹性构成硬约束，适合按具体分子拆解。",
+          "serenity": [1.4, 1.0, 1.4, 1.0, 1.0, 0.9, 0.8],
+          "molecules": ["WF6 六氟化钨", "EMC/GMC 塑封料", "CMP 抛光液/抛光垫", "球形硅微粉", "溅射靶材", "ABF 树脂"],
+          "targets": ["中船特气(688146)", "安集科技(688019)", "鼎龙股份(300054)", "联瑞新材(688300)", "江丰电子(300666)", "华海诚科(688535)"]
+        }
+      ]
     },
-    { "key": "hbm", "label": "HBM", "tagline": "高带宽存储——AI 芯片的内存瓶颈", "hot": true, "verified": false, "nodes": [] },
-    { "key": "cpo", "label": "光互联", "tagline": "光电共封装（CPO）——突破铜互连的带宽墙", "hot": true, "verified": false, "nodes": [] },
+    {
+      "key": "upstream-materials",
+      "label": "上游卡口材料",
+      "tagline": "AI 算力与先进封装的材料瓶颈：特气、球硅、GMC、CMP、靶材、ABF",
+      "hot": true,
+      "verified": true,
+      "nodes": ["WF6 六氟化钨", "球形硅微粉", "GMC/EMC 塑封料", "CMP 抛光液/抛光垫", "溅射靶材", "ABF 树脂"],
+      "subSectors": [
+        {
+          "key": "wf6",
+          "label": "WF6 六氟化钨",
+          "positioning": "沉积/刻蚀关键电子特气，下游刚需且供给刚性。",
+          "barrier": "纯度、稳定供应、晶圆厂认证与扩产周期。",
+          "serenity": [1.8, 1.5, 1.5, 1.0, 1.4, 0.9, 0.3],
+          "molecules": ["WF6"],
+          "targets": ["中船特气(688146)"]
+        },
+        {
+          "key": "cmp",
+          "label": "CMP 抛光",
+          "positioning": "晶圆平坦化必须耗材，分抛光液与抛光垫。",
+          "barrier": "配方、批次一致性、客户认证周期与导入粘性。",
+          "serenity": [1.3, 1.4, 1.4, 1.0, 0.9, 0.6, 0.4],
+          "molecules": ["CMP 抛光液", "CMP 抛光垫"],
+          "targets": ["安集科技(688019)", "鼎龙股份(300054)"]
+        },
+        {
+          "key": "packaging-materials",
+          "label": "封装材料",
+          "positioning": "先进封装使用的塑封料、填料与载板材料。",
+          "barrier": "日系主导，高端认证慢，GMC 等新品仍需收入兑现。",
+          "serenity": [1.2, 1.0, 1.2, 1.0, 0.9, 0.5, 0.5],
+          "molecules": ["EMC/GMC", "球形硅微粉", "ABF 树脂"],
+          "targets": ["华海诚科(688535)", "联瑞新材(688300)"]
+        },
+        {
+          "key": "target-materials",
+          "label": "溅射靶材",
+          "positioning": "PVD 镀膜关键材料，受高纯度和客户认证约束。",
+          "barrier": "高纯金属、组织控制、一致性和认证周期。",
+          "serenity": [1.2, 1.5, 1.2, 1.0, 0.8, 0.5, 0.5],
+          "molecules": ["高纯靶材"],
+          "targets": ["江丰电子(300666)"]
+        }
+      ]
+    },
+    { "key": "hbm", "label": "HBM", "tagline": "高带宽存储：AI 芯片的内存瓶颈", "hot": true, "verified": true, "nodes": ["HBM 本体", "混合键合/TCB", "HBM 测试机", "GMC/球硅材料"] },
+    { "key": "cpo", "label": "光互联", "tagline": "光电共封装 CPO 与高速光模块：突破集群互联带宽墙", "hot": true, "verified": true, "nodes": ["800G/1.6T 光模块", "硅光/CPO", "光芯片/EML", "InP 衬底"] },
     { "key": "semiconductor", "label": "半导体国产替代", "tagline": "设备、材料、EDA、制造的自主链条", "hot": true, "verified": false, "nodes": [] },
     { "key": "solid-state-battery", "label": "固态电池", "tagline": "下一代电池的材料与工艺路线", "hot": true, "verified": false, "nodes": [] },
     { "key": "low-altitude", "label": "低空经济", "tagline": "eVTOL、空管、基建与运营", "hot": true, "verified": false, "nodes": [] },
@@ -33,7 +153,7 @@
     { "key": "fusion", "label": "可控核聚变", "tagline": "磁约束、超导与第一壁材料", "hot": true, "verified": false, "nodes": [] },
     { "key": "business-space", "label": "商业航天", "tagline": "火箭、卫星制造与卫星互联网", "hot": true, "verified": false, "nodes": [] },
     { "key": "ai-pharma", "label": "生物医药", "tagline": "创新药、AI 制药与生物技术", "hot": true, "verified": false, "nodes": [] },
-    { "key": "resources", "label": "资源卡口", "tagline": "稀土、锗、铟等被卡的关键资源", "hot": false, "verified": false, "nodes": [] },
+    { "key": "resources", "label": "资源卡口", "tagline": "稀土、钨、铟等被卡的关键资源", "hot": false, "verified": false, "nodes": [] },
     { "key": "ai-application", "label": "AI 应用", "tagline": "大模型落地的应用与 Agent", "hot": true, "verified": false, "nodes": [] },
     { "key": "ai-hardware", "label": "AI 硬件", "tagline": "端侧、AI 眼镜与消费终端", "hot": true, "verified": false, "nodes": [] },
     { "key": "energy-storage", "label": "储能", "tagline": "电化学储能与电网侧调峰", "hot": false, "verified": false, "nodes": [] },

@@ -41,7 +41,7 @@ _CLI_DEFS: dict[str, dict] = {
                  "build_args": lambda _: ["exec", "--auto"], "env": {}},
     # Codex：codex exec 默认纯文本（进度走 stderr、最终答案走 stdout）；`-` 从 stdin 读提示词，
     # --skip-git-repo-check 跳过 git 检查（我们在临时目录跑）。复用本机 `codex login` 的订阅登录态。
-    "codex": {"bins": ["codex"], "delivery": "stdin",
+    "codex": {"bins": ["codex.cmd", "codex"], "delivery": "stdin",
               "build_args": lambda _: ["exec", "--skip-git-repo-check", "-"], "env": {}},
 }
 
@@ -71,6 +71,14 @@ def _find_bin(name: str) -> str | None:
     return None
 
 
+def _can_launch(path: str) -> bool:
+    try:
+        subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+        return True
+    except (PermissionError, OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def detect_cli(kind: str) -> str | None:
     """返回某订阅 CLI 的可执行路径，未装则 None。"""
     d = _CLI_DEFS.get(kind)
@@ -78,7 +86,7 @@ def detect_cli(kind: str) -> str | None:
         return None
     for b in d["bins"]:
         found = _find_bin(b)
-        if found:
+        if found and (kind != "codex" or _can_launch(found)):
             return found
     return None
 
@@ -121,6 +129,8 @@ def run_cli(kind: str, system_prompt: str, user_prompt: str) -> str:
                 input=stdin_payload,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 cwd=tmpdir,
                 env=env,
                 timeout=_CLI_TIMEOUT_S,
@@ -167,7 +177,7 @@ def run_cli_stream(kind: str, system_prompt: str, user_prompt: str):
 
         proc = subprocess.Popen(
             [bin_path, *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, cwd=tmpdir, env=env, text=True, bufsize=1,
+            stderr=subprocess.DEVNULL, cwd=tmpdir, env=env, text=True, encoding="utf-8", errors="replace", bufsize=1,
         )
         if stdin_payload is not None:
             try:

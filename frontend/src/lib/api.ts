@@ -9,6 +9,10 @@ export class ApiError extends Error {
 
 // 后端访问密钥（对应后端部署时的 VR_API_KEY，公网部署防蹭用）。只存本地浏览器。
 const ACCESS_KEY = "vr-access-key";
+const ENV_API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || "").trim();
+const API_BASE =
+  ENV_API_URL ||
+  (typeof window !== "undefined" && window.location.port === "5899" ? "http://127.0.0.1:8900" : "");
 
 export function loadAccessKey(): string {
   try {
@@ -42,7 +46,7 @@ async function request<T>(path: string, method: "GET" | "POST" | "DELETE" = "GET
   }
   if (Object.keys(headers).length > 0) opts.headers = headers;
   try {
-    resp = await fetch(`/api${path}`, opts);
+    resp = await fetch(`${API_BASE}/api${path}`, opts);
   } catch {
     throw new ApiError("连接不到后端，请先启动 backend（uvicorn app:app --port 8900）", 0);
   }
@@ -214,6 +218,21 @@ export interface GlobalStock {
   quote: GlobalQuote; metrics: GlobalMetrics | null;
 }
 
+export interface ResearchReport {
+  title: string; date: string; segment: string; source: string;
+  type?: string; org?: string; path?: string; pdfUrl?: string | null; size?: number;
+}
+export interface SerenityLeader {
+  name: string; code: string; molecule: string; dims: number[]; total: number; tier: string;
+  note: string; source: string;
+  quote: { price?: number; change_pct?: number; pe_ttm?: number; pb?: number; mcap_yi?: number };
+}
+export interface ResearchLibrary {
+  as_of: string; local_count: number; online_count: number;
+  local_reports: ResearchReport[]; online_reports: ResearchReport[]; leaders: SerenityLeader[];
+  keywords: string[];
+}
+
 export const api = {
   health: () => get<{ ok: boolean }>("/health"),
   indices: () => get<IndexQuote[]>("/indices"),
@@ -222,6 +241,7 @@ export const api = {
   turnoverTop: () => get<TurnoverTop>("/market/turnover-top"),
   globalIndices: () => get<GlobalIndex[]>("/global/indices"),
   globalStock: (symbol: string) => get<GlobalStock>(`/global/stock?symbol=${encodeURIComponent(symbol)}`),
+  researchLibrary: () => get<ResearchLibrary>("/research/library"),
   radar: () => get<RadarData>("/radar"),
   radarRefresh: () => request<RadarData>("/radar/refresh", "POST"),
   portfolio: () => get<PortfolioData>("/portfolio"),

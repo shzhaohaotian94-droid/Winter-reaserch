@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: vibe-research-api
+    env: docker
+    rootDir: backend
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: VR_PUBLIC_READONLY
+        value: "true"
+      - key: VR_RESEARCH_ROOT
+        value: /app/research
+      - key: VR_ALLOW_ORIGINS
+        value: "*"

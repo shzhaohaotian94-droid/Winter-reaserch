@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
+import { WinterDashboard } from "@/pages/WinterDashboard";
+import { ResearchLibrary } from "@/pages/ResearchLibrary";
 import { DailyReview } from "@/pages/DailyReview";
 import { Intel } from "@/pages/Intel";
 import { Sectors } from "@/pages/Sectors";
@@ -13,7 +15,9 @@ export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
-      { path: "/", element: <Navigate to="/daily-review" replace /> },
+      { path: "/", element: <Navigate to="/winter" replace /> },
+      { path: "/winter", element: <WinterDashboard /> },
+      { path: "/research-library", element: <ResearchLibrary /> },
       { path: "/daily-review", element: <DailyReview /> },
       { path: "/intel", element: <Intel /> },
       { path: "/sectors", element: <Sectors /> },

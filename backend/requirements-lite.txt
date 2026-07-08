@@ -1,0 +1,6 @@
+# Lightweight desktop startup dependencies.
+# These are enough for the API server, Tencent quotes, global indices,
+# reports that only need requests, and the Winter dashboard shell.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+requests
