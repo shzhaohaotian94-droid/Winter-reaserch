@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags, Network, RadioTower } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags, Network, RadioTower, ScanSearch } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AskAiButton } from "@/components/ui/AskAiButton";
@@ -165,6 +165,26 @@ type BottleneckLeaderSummary = {
   leaders: BottleneckLeader[];
 };
 
+type StockScore = {
+  tag: string;
+  name: string;
+  code: string;
+  molecule: string;
+  role: string;
+  serenity: number[];
+  tier: string;
+  thesis: string;
+  risk: string;
+};
+
+type StockScoreSummary = {
+  title: string;
+  asOf: string;
+  scoringNote: string;
+  tags: string[];
+  stocks: StockScore[];
+};
+
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
 const tierOf = (score: number) => (score >= 8.5 ? "S" : score >= 7 ? "A" : score >= 5.5 ? "B" : score >= 4 ? "C" : "出局");
 
@@ -289,6 +309,70 @@ function BottleneckLeaderSummaryPanel({ summary }: { summary: BottleneckLeaderSu
             </div>
           );
         })}
+      </div>
+    </GlassCard>
+  );
+}
+
+function StockScoreSummaryPanel({ summary }: { summary: StockScoreSummary }) {
+  const sorted = [...summary.stocks].sort((a, b) => sumScore(b.serenity) - sumScore(a.serenity));
+
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">个股 Serenity 评分 · {summary.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{summary.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{summary.scoringNote}</p>
+        </div>
+        <ScanSearch className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {summary.tags.map((tag) => (
+          <span key={tag} className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-border/70">
+        <div className="grid grid-cols-[54px_minmax(130px,1.1fr)_minmax(120px,1fr)_92px_minmax(220px,1.7fr)] gap-0 bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <span>排名</span>
+          <span>股票</span>
+          <span>卡口</span>
+          <span>评分</span>
+          <span>结论</span>
+        </div>
+        <div className="divide-y divide-border/60">
+          {sorted.map((stock, index) => {
+            const score = sumScore(stock.serenity);
+            return (
+              <div
+                key={`${stock.code}-${stock.molecule}`}
+                className="grid grid-cols-[54px_minmax(130px,1.1fr)_minmax(120px,1fr)_92px_minmax(220px,1.7fr)] gap-0 px-3 py-3 text-sm"
+              >
+                <div className="text-muted-foreground">#{index + 1}</div>
+                <div>
+                  <div className="font-bold text-foreground">{stock.name}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">{stock.code} · {stock.tag}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-primary">{stock.molecule}</div>
+                  <div className="mt-1 text-xs leading-5 text-muted-foreground">{stock.role}</div>
+                </div>
+                <div>
+                  <div className="font-extrabold text-primary">{score.toFixed(1)}</div>
+                  <div className="text-xs text-muted-foreground">{stock.tier} · {tierOf(score)}</div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs leading-5 text-muted-foreground">{stock.thesis}</p>
+                  <p className="text-xs leading-5 text-muted-foreground"><b className="text-foreground">风险：</b>{stock.risk}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </GlassCard>
   );
@@ -675,6 +759,7 @@ export function SectorDetail() {
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
   const bottleneckLeaderSummary = ((sector as unknown as { bottleneckLeaderSummary?: BottleneckLeaderSummary }).bottleneckLeaderSummary);
+  const stockScoreSummary = ((sector as unknown as { stockScoreSummary?: StockScoreSummary }).stockScoreSummary);
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
   const leaderLandscape = ((sector as unknown as { leaderLandscape?: LeaderLandscape }).leaderLandscape);
@@ -717,6 +802,8 @@ export function SectorDetail() {
               <Plus className="h-3.5 w-3.5" /> 这里恢复的是旧看板的细分骨架，标的用于研究索引，不构成买卖建议。
             </p>
           </div>
+
+          {stockScoreSummary && <StockScoreSummaryPanel summary={stockScoreSummary} />}
 
           {bottleneckLeaderSummary && <BottleneckLeaderSummaryPanel summary={bottleneckLeaderSummary} />}
 
