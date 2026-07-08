@@ -36,7 +36,7 @@ jobs:
 
       - name: Build
         env:
-          VITE_BASE: /Winter-research/
+          VITE_BASE: /Winter-reaserch/
           VITE_API_URL: ""
         run: npm run build
 
