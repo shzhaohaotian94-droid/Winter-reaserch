@@ -146,6 +146,25 @@ type CpoRoute = {
   sources: { label: string; url: string }[];
 };
 
+type BottleneckLeader = {
+  bottleneck: string;
+  position: string;
+  globalLeaders: string[];
+  chinaLeaders: string[];
+  preferredTargets: string[];
+  serenity: number[];
+  rating: string;
+  reason: string;
+  caveat: string;
+};
+
+type BottleneckLeaderSummary = {
+  title: string;
+  asOf: string;
+  scoringNote: string;
+  leaders: BottleneckLeader[];
+};
+
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
 const tierOf = (score: number) => (score >= 8.5 ? "S" : score >= 7 ? "A" : score >= 5.5 ? "B" : score >= 4 ? "C" : "出局");
 
@@ -208,6 +227,68 @@ function SubSectorCard({ item }: { item: SubSector }) {
           </div>
           <ChipList items={item.targets} tone="target" />
         </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+function BottleneckLeaderSummaryPanel({ summary }: { summary: BottleneckLeaderSummary }) {
+  const sorted = [...summary.leaders].sort((a, b) => sumScore(b.serenity) - sumScore(a.serenity));
+
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">Serenity 龙头评分 · {summary.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{summary.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{summary.scoringNote}</p>
+        </div>
+        <Gauge className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {sorted.map((item) => {
+          const score = sumScore(item.serenity);
+          return (
+            <div key={item.bottleneck} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-primary">{item.bottleneck}</p>
+                  <h3 className="mt-1 text-base font-bold">{item.position}</h3>
+                </div>
+                <div className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-right">
+                  <div className="text-[11px] text-muted-foreground">Serenity</div>
+                  <div className="text-lg font-extrabold text-primary">{score.toFixed(1)} {tierOf(score)}</div>
+                  <div className="text-[11px] text-muted-foreground">{item.rating}</div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">全球龙头</p>
+                  <ChipList items={item.globalLeaders} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">中国映射</p>
+                  <ChipList items={item.chinaLeaders} tone="target" />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">优先跟踪</p>
+                  <ChipList items={item.preferredTargets} tone="target" />
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <p className="rounded bg-muted/25 p-3 text-xs leading-5 text-muted-foreground">
+                  <b className="text-foreground">评分理由：</b>{item.reason}
+                </p>
+                <p className="rounded bg-muted/25 p-3 text-xs leading-5 text-muted-foreground">
+                  <b className="text-foreground">扣分项：</b>{item.caveat}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </GlassCard>
   );
@@ -593,6 +674,7 @@ export function SectorDetail() {
 
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
+  const bottleneckLeaderSummary = ((sector as unknown as { bottleneckLeaderSummary?: BottleneckLeaderSummary }).bottleneckLeaderSummary);
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
   const leaderLandscape = ((sector as unknown as { leaderLandscape?: LeaderLandscape }).leaderLandscape);
@@ -635,6 +717,8 @@ export function SectorDetail() {
               <Plus className="h-3.5 w-3.5" /> 这里恢复的是旧看板的细分骨架，标的用于研究索引，不构成买卖建议。
             </p>
           </div>
+
+          {bottleneckLeaderSummary && <BottleneckLeaderSummaryPanel summary={bottleneckLeaderSummary} />}
 
           {researchTags.length > 0 && (
             <div>
