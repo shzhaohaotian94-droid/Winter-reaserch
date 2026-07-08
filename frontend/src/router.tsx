@@ -11,21 +11,26 @@ import { StockData } from "@/pages/StockData";
 import { Notes } from "@/pages/Notes";
 import { Settings } from "@/pages/Settings";
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      element: <Layout />,
+      children: [
+        { path: "/", element: <Navigate to="/winter" replace /> },
+        { path: "/winter", element: <WinterDashboard /> },
+        { path: "/research-library", element: <ResearchLibrary /> },
+        { path: "/daily-review", element: <DailyReview /> },
+        { path: "/intel", element: <Intel /> },
+        { path: "/sectors", element: <Sectors /> },
+        { path: "/sectors/:key", element: <SectorDetail /> },
+        { path: "/portfolio", element: <Portfolio /> },
+        { path: "/stock-data", element: <StockData /> },
+        { path: "/notes", element: <Notes /> },
+        { path: "/settings", element: <Settings /> },
+      ],
+    },
+  ],
   {
-    element: <Layout />,
-    children: [
-      { path: "/", element: <Navigate to="/winter" replace /> },
-      { path: "/winter", element: <WinterDashboard /> },
-      { path: "/research-library", element: <ResearchLibrary /> },
-      { path: "/daily-review", element: <DailyReview /> },
-      { path: "/intel", element: <Intel /> },
-      { path: "/sectors", element: <Sectors /> },
-      { path: "/sectors/:key", element: <SectorDetail /> },
-      { path: "/portfolio", element: <Portfolio /> },
-      { path: "/stock-data", element: <StockData /> },
-      { path: "/notes", element: <Notes /> },
-      { path: "/settings", element: <Settings /> },
-    ],
+    basename: import.meta.env.BASE_URL,
   },
-]);
+);
