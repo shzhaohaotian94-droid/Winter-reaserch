@@ -411,8 +411,8 @@
         {
           "key": "leaders",
           "label": "3 产业龙头",
-          "status": "empty",
-          "description": ""
+          "status": "done",
+          "description": "已完成：按架构定义、封装制造、高端光芯片、上游衬底、精密光纤耦合、系统组装横向比较全球格局。"
         },
         {
           "key": "cp0-route",
@@ -666,6 +666,114 @@
           {
             "label": "800G Pluggable MSA",
             "url": "https://www.800gmsa.com/"
+          }
+        ]
+      },
+      "leaderLandscape": {
+        "title": "产业龙头：全球光互联的六段横向格局",
+        "asOf": "2026-07-08",
+        "thesis": "光互联不是单点国产替代，而是一条跨架构、芯片、材料、封装、系统和需求端的全球分工链。中国已经在“光模块封装制造”和“精密光纤耦合/无源器件”进入全球第一梯队，但在高端光芯片、InP 衬底、DSP/SerDes、系统架构定义和 CPO 平台话语权上仍明显被海外卡住。",
+        "segments": [
+          {
+            "segment": "架构定义",
+            "grade": "海外主导",
+            "globalDominance": "由美国云厂、GPU/交换芯片厂和标准组织主导。",
+            "leadingRegions": ["美国", "以太网/IEEE/OIF 生态", "头部云厂"],
+            "globalPlayers": ["NVIDIA", "Broadcom", "Marvell", "Microsoft", "Meta", "Google", "Cisco"],
+            "chinaPlayers": ["华为", "阿里云", "腾讯云", "百度智能云"],
+            "chinaTier": "中国处在第二梯队到局部第一梯队之间：在国内云和通信设备体系内有系统能力，但全球 AI 集群网络架构定义权仍主要在美国头部生态。",
+            "barrier": "架构定义的壁垒不是单一硬件，而是 GPU/ASIC、交换芯片、网络协议、光电接口标准、云厂资本开支和软件生态的协同。",
+            "chinaPosition": "国内能做系统和局部标准参与，但在 NVIDIA GPU 生态、Broadcom/Marvell 交换芯片生态、OIF/IEEE 话语权和超大训练集群最佳实践上仍落后。",
+            "conclusion": "海外主导。中国能跟随和局部替代，但全球技术路线的第一定义权仍在美国。"
+          },
+          {
+            "segment": "封装制造",
+            "grade": "中国已建立壁垒",
+            "globalDominance": "中国厂商已在高速光模块封装、批量交付和大客户响应上进入全球第一梯队。",
+            "leadingRegions": ["中国大陆", "中国台湾", "美国"],
+            "globalPlayers": ["Coherent", "Lumentum", "Fabrinet", "Cisco/Acacia"],
+            "chinaPlayers": ["中际旭创", "新易盛", "华工科技", "光迅科技", "剑桥科技"],
+            "chinaTier": "中国第一梯队：中际旭创、新易盛等在 800G/1.6T 光模块交付、成本控制和客户导入上具备全球竞争力。",
+            "barrier": "高速封装壁垒在光电耦合、热管理、高速信号完整性、自动化测试、良率爬坡和客户认证。",
+            "chinaPosition": "中国不是低端代工角色，而是在数据中心高速光模块中建立了规模、成本、工程和客户交付壁垒。",
+            "conclusion": "中国已建立壁垒。这里是中国光互联产业链最强的全球位置。"
+          },
+          {
+            "segment": "高端光芯片",
+            "grade": "海外主导",
+            "globalDominance": "高端激光芯片、硅光 PIC、探测器、DSP/SerDes 仍由欧美日厂商和美国芯片生态主导。",
+            "leadingRegions": ["美国", "日本", "欧洲"],
+            "globalPlayers": ["Broadcom", "Marvell", "Coherent", "Lumentum", "Intel", "MACOM", "Semtech"],
+            "chinaPlayers": ["源杰科技", "长光华芯", "仕佳光子", "光迅科技", "敏芯股份"],
+            "chinaTier": "中国处于第二梯队：部分 25G/50G/100G 光芯片和器件有突破，但在 200G/lane、硅光平台、DSP/SerDes 和头部云厂认证上仍有差距。",
+            "barrier": "壁垒在高速激光器带宽、线性度、热稳定、寿命、一致性、硅光工艺平台、DSP 功耗和客户长周期验证。",
+            "chinaPosition": "中国有单点突破和国产替代弹性，但在最高速率、最高可靠性和平台化能力上仍被卡。",
+            "conclusion": "海外主导。整条链最硬的卡口之一就在这里，尤其是 1.6T/3.2T 所需的 200G/lane 以上核心器件。"
+          },
+          {
+            "segment": "上游衬底",
+            "grade": "海外主导",
+            "globalDominance": "InP 衬底、化合物半导体外延、高一致性硅光晶圆和部分特种光纤材料仍由日本、欧美和中国台湾生态更强。",
+            "leadingRegions": ["日本", "美国", "欧洲", "中国台湾"],
+            "globalPlayers": ["Sumitomo Electric", "JX Metals", "IQE", "AXT", "GlobalWafers", "Soitec"],
+            "chinaPlayers": ["云南锗业", "鼎泰高科相关材料链", "天岳先进相关衬底能力", "中芯国际/华虹相关硅光代工生态"],
+            "chinaTier": "中国多处在第二梯队或追赶阶段：部分衬底和硅光制造能力存在，但高端 InP、外延一致性、规模良率和国际客户认证仍弱。",
+            "barrier": "材料衬底的壁垒在纯度、缺陷密度、晶圆尺寸、外延一致性、长期可靠性和客户认证周期。",
+            "chinaPosition": "衬底是国产链条里更上游、更慢热的卡口。短期不如模块封装显性，但决定高端光芯片性能上限。",
+            "conclusion": "海外主导。中国在部分材料方向有追赶，但高端 InP 和高一致性平台能力仍是被卡点。"
+          },
+          {
+            "segment": "精密光纤耦合",
+            "grade": "中国已建立壁垒",
+            "globalDominance": "中国厂商在光器件无源部件、FAU、透镜、隔离器、连接器和精密耦合环节具备全球竞争力。",
+            "leadingRegions": ["中国大陆", "日本", "美国"],
+            "globalPlayers": ["Senko", "US Conec", "Coherent", "Molex"],
+            "chinaPlayers": ["天孚通信", "太辰光", "腾景科技", "光库科技", "博创科技"],
+            "chinaTier": "中国第一梯队：天孚通信等在高端光无源器件、精密耦合和模块配套能力上进入全球头部客户供应链。",
+            "barrier": "壁垒在微米级装配精度、自动化耦合、批量一致性、低损耗、可靠性和与头部模块厂/云厂协同开发。",
+            "chinaPosition": "这是中国光互联链条中除模块封装外最强的一段，具备从国产替代走向全球供给的能力。",
+            "conclusion": "中国已建立壁垒。精密耦合和无源器件是中国已经能参与全球定价和份额竞争的强环节。"
+          },
+          {
+            "segment": "系统组装",
+            "grade": "中外混合",
+            "globalDominance": "交换机、AI 网络系统和光模块整机由美国网络设备、交换芯片生态和中国通信设备/制造能力共同参与。",
+            "leadingRegions": ["美国", "中国大陆", "中国台湾"],
+            "globalPlayers": ["NVIDIA", "Cisco", "Arista", "Broadcom", "Foxconn", "Quanta"],
+            "chinaPlayers": ["华为", "中兴通讯", "工业富联", "浪潮信息", "紫光股份/新华三"],
+            "chinaTier": "中国在通信设备和服务器制造中处于全球第一梯队，但在 AI 训练集群网络系统、交换芯片和 NVIDIA 生态绑定上仍受限制。",
+            "barrier": "壁垒在交换芯片、网络操作系统、整机热设计、集群调优、供应链交付和云厂生态绑定。",
+            "chinaPosition": "中国具备系统制造和通信设备能力，但高端 AI 网络平台仍依赖海外交换芯片和生态。",
+            "conclusion": "中外混合。制造和系统集成中国很强，架构和核心交换芯片仍偏海外主导。"
+          }
+        ],
+        "chinaFirstTier": [
+          "封装制造：中际旭创、新易盛、华工科技、光迅科技等在 800G/1.6T 光模块交付上进入全球第一梯队，强在工程化、规模制造、良率和头部客户响应。",
+          "精密光纤耦合/无源器件：天孚通信、太辰光、腾景科技、光库科技等在 FAU、透镜、隔离器、连接器、精密耦合等环节具备全球竞争力。",
+          "部分系统制造：华为、中兴、工业富联、浪潮信息等在通信设备、服务器制造和交付上具备全球能力，但 AI 网络架构话语权仍不等同于全球主导。"
+        ],
+        "chinaBottlenecks": [
+          "架构定义：全球 AI 集群网络路线仍由 NVIDIA、Broadcom、Marvell、Microsoft、Meta、Google、Cisco 等海外生态定义，中国更多是跟随、适配和局部替代。",
+          "高端光芯片和器件：200G/lane 以上激光芯片、硅光 PIC、探测器、DSP/SerDes 的平台化能力仍是核心卡口。",
+          "上游衬底：InP 衬底、外延一致性、高端硅光晶圆平台和国际客户认证仍弱于日本、欧美和中国台湾生态。",
+          "高端系统平台：交换芯片、网络系统生态、CPO/CP0 平台定义与超大训练集群实战经验仍主要在海外。"
+        ],
+        "sources": [
+          {
+            "label": "Ethernet Alliance 2026 Ethernet Roadmap",
+            "url": "https://ethernetalliance.org/technology/ethernet-roadmap/"
+          },
+          {
+            "label": "OIF Energy Efficient Interfaces",
+            "url": "https://www.oiforum.com/technical-work/hot-topics/energy-efficient-interfaces/"
+          },
+          {
+            "label": "800G Pluggable MSA",
+            "url": "https://www.800gmsa.com/"
+          },
+          {
+            "label": "NVIDIA silicon photonics / CPO public roadmap report",
+            "url": "https://www.tomshardware.com/networking/nvidia-outlines-plans-for-using-light-for-communication-between-ai-gpus-by-2026-silicon-photonics-and-co-packaged-optics-may-become-mandatory-for-next-gen-ai-data-centers"
           }
         ]
       }

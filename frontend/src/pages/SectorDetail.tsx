@@ -92,6 +92,29 @@ type TechChain = {
   sources: { label: string; url: string }[];
 };
 
+type LeaderSegment = {
+  segment: string;
+  grade: "海外主导" | "中外混合" | "中国已建立壁垒";
+  globalDominance: string;
+  leadingRegions: string[];
+  globalPlayers: string[];
+  chinaPlayers: string[];
+  chinaTier: string;
+  barrier: string;
+  chinaPosition: string;
+  conclusion: string;
+};
+
+type LeaderLandscape = {
+  title: string;
+  asOf: string;
+  thesis: string;
+  segments: LeaderSegment[];
+  chinaFirstTier: string[];
+  chinaBottlenecks: string[];
+  sources: { label: string; url: string }[];
+};
+
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
 const tierOf = (score: number) => (score >= 8.5 ? "S" : score >= 7 ? "A" : score >= 5.5 ? "B" : score >= 4 ? "C" : "出局");
 
@@ -331,6 +354,114 @@ function TechChainPanel({ techChain }: { techChain: TechChain }) {
   );
 }
 
+function LeaderLandscapePanel({ landscape }: { landscape: LeaderLandscape }) {
+  const gradeClass: Record<LeaderSegment["grade"], string> = {
+    海外主导: "border-red-500/35 bg-red-500/10 text-red-300",
+    中外混合: "border-amber-500/35 bg-amber-500/10 text-amber-300",
+    中国已建立壁垒: "border-primary/35 bg-primary/10 text-primary",
+  };
+
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">3 产业龙头 · {landscape.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{landscape.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{landscape.thesis}</p>
+        </div>
+        <Target className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {landscape.segments.map((item) => (
+          <div key={item.segment} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-base font-bold">{item.segment}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{item.globalDominance}</p>
+              </div>
+              <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${gradeClass[item.grade]}`}>
+                {item.grade}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">主导地区/国家</p>
+                <ChipList items={item.leadingRegions} />
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">海外代表</p>
+                <ChipList items={item.globalPlayers} />
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">中国代表</p>
+                <ChipList items={item.chinaPlayers} tone="target" />
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">中国梯队</p>
+                <p className="text-xs leading-5 text-muted-foreground">{item.chinaTier}</p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <div className="rounded bg-muted/25 p-3">
+                <p className="mb-1 text-xs font-semibold text-foreground">壁垒</p>
+                <p className="text-xs leading-5 text-muted-foreground">{item.barrier}</p>
+              </div>
+              <div className="rounded bg-muted/25 p-3">
+                <p className="mb-1 text-xs font-semibold text-foreground">中国位置</p>
+                <p className="text-xs leading-5 text-muted-foreground">{item.chinaPosition}</p>
+              </div>
+              <div className="rounded bg-muted/25 p-3">
+                <p className="mb-1 text-xs font-semibold text-foreground">结论</p>
+                <p className="text-xs leading-5 text-muted-foreground">{item.conclusion}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+          <h3 className="mb-3 text-sm font-bold text-primary">中国已进入全球第一梯队</h3>
+          <div className="space-y-2">
+            {landscape.chinaFirstTier.map((item) => (
+              <p key={item} className="text-sm leading-6 text-muted-foreground">{item}</p>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+          <h3 className="mb-3 text-sm font-bold text-red-300">仍被卡的关键环节</h3>
+          <div className="space-y-2">
+            {landscape.chinaBottlenecks.map((item) => (
+              <p key={item} className="text-sm leading-6 text-muted-foreground">{item}</p>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border/60 pt-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">引用来源</p>
+        <div className="flex flex-wrap gap-2">
+          {landscape.sources.map((source) => (
+            <a
+              key={source.url}
+              href={source.url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              {source.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+
 export function SectorDetail() {
   const { key } = useParams();
   const sector = sectorsData.sectors.find((s) => s.key === key);
@@ -347,6 +478,7 @@ export function SectorDetail() {
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
+  const leaderLandscape = ((sector as unknown as { leaderLandscape?: LeaderLandscape }).leaderLandscape);
   const aiContext =
     `板块：${sector.label}\n定位：${sector.tagline}\n产业链环节：` +
     (sector.nodes.length ? sector.nodes.join("、") : "（环节梳理中）") +
@@ -412,6 +544,8 @@ export function SectorDetail() {
           {overview && <OverviewPanel overview={overview} />}
 
           {techChain && <TechChainPanel techChain={techChain} />}
+
+          {leaderLandscape && <LeaderLandscapePanel landscape={leaderLandscape} />}
 
           {subSectors.length > 0 && (
             <div>
