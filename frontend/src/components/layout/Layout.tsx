@@ -16,7 +16,7 @@ const NAV = [
   { to: "/winter", icon: Snowflake, label: "Winter 看板" },
   { to: "/research-library", icon: FileText, label: "研报与评分" },
   { to: "/daily-review", icon: Activity, label: "每日复盘" },
-  { to: "/intel", icon: Radar, label: "资讯雷达" },
+  { to: "/industry-news", icon: Radar, label: "行业资讯" },
   { to: "/sectors", icon: LayoutGrid, label: "板块中心" },
   { to: "/stock-data", icon: Search, label: "个股数据" },
   { to: "/portfolio", icon: Wallet, label: "我的持仓" },

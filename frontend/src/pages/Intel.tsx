@@ -16,7 +16,7 @@ const TABS = [
   { key: "events", label: "事件概率", icon: TrendingUp, integrated: false, desc: "全球宏观预期概率（公开数据、免登录只读），后续接入" },
   { key: "filings", label: "A股公告", icon: FileText, integrated: false, desc: "汇总关注列表里各个股的近期公告（东财公开披露）" },
   { key: "news", label: "公开新闻", icon: Newspaper, integrated: false, desc: "汇总关注列表里各个股的近期新闻（公开源）" },
-  { key: "investment-news", label: "Investment News", icon: Rss, integrated: true, desc: "12 赛道全球公开 RSS 资讯（集成自 investment-news 仓库）" },
+  { key: "investment-news", label: "行业资讯", icon: Rss, integrated: true, desc: "12 赛道全球公开 RSS 资讯（集成自 investment-news 仓库）" },
 ];
 
 interface Digest { loading?: boolean; text?: string; err?: string; needKey?: boolean }
@@ -303,7 +303,7 @@ export function Intel() {
 
   return (
     <div>
-      <PageHeader title="资讯雷达" subtitle="多来源资讯中心：AI 帮你跨源捞资讯、提炼要点" />
+      <PageHeader title="行业资讯" subtitle="集成 simonlin1212/investment-news：12 赛道全球公开 RSS 资讯，点击刷新即可调取" />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {TABS.map(({ key, label, icon: Icon, integrated }) => (

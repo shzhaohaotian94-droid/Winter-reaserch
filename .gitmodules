@@ -1,0 +1,3 @@
+[submodule "integrations/investment-news"]
+	path = integrations/investment-news
+	url = https://github.com/simonlin1212/investment-news.git

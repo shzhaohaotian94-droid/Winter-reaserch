@@ -19,7 +19,9 @@ from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCES_FILE = os.path.join(HERE, "news_sources.json")
+PROJECT_ROOT = os.path.dirname(HERE)
+INTEGRATED_SOURCES_FILE = os.path.join(PROJECT_ROOT, "integrations", "investment-news", "sources.json")
+SOURCES_FILE = INTEGRATED_SOURCES_FILE if os.path.exists(INTEGRATED_SOURCES_FILE) else os.path.join(HERE, "news_sources.json")
 CACHE_DIR = os.path.join(HERE, ".cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "radar.json")
 
