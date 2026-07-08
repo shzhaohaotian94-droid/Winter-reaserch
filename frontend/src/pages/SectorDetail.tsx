@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AskAiButton } from "@/components/ui/AskAiButton";
@@ -14,6 +14,13 @@ type SubSector = {
   serenity?: number[];
   molecules?: string[];
   targets?: string[];
+};
+
+type ResearchTag = {
+  key: string;
+  label: string;
+  status?: string;
+  description?: string;
 };
 
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
@@ -96,6 +103,7 @@ export function SectorDetail() {
   }
 
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
+  const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
   const aiContext =
     `板块：${sector.label}\n定位：${sector.tagline}\n产业链环节：` +
     (sector.nodes.length ? sector.nodes.join("、") : "（环节梳理中）") +
@@ -134,6 +142,29 @@ export function SectorDetail() {
               <Plus className="h-3.5 w-3.5" /> 这里恢复的是旧看板的细分骨架，标的用于研究索引，不构成买卖建议。
             </p>
           </div>
+
+          {researchTags.length > 0 && (
+            <div>
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
+                <Tags className="h-5 w-5 text-primary" /> 研究栏目
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                {researchTags.map((tag) => (
+                  <GlassCard key={tag.key} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-bold">{tag.label}</h3>
+                      <span className="rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+                        {tag.status === "empty" ? "空栏目" : tag.status || "整理中"}
+                      </span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {tag.description || "等待下一步指令填充内容页。"}
+                    </p>
+                  </GlassCard>
+                ))}
+              </div>
+            </div>
+          )}
 
           {subSectors.length > 0 && (
             <div>

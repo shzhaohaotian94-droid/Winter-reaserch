@@ -1,12 +1,106 @@
 import type { ResearchLibrary } from "@/lib/api";
 
+const localReports = [
+  {
+    title: "Serenity_瓶颈投资法_v3_学习笔记",
+    date: "2026-07-07",
+    segment: "其他",
+    source: "本地静态快照",
+    type: "md",
+    path: "本地私有笔记，仅公开标题索引。",
+  },
+  {
+    title: "AI上游材料.agent.final.footnote",
+    date: "2026-07-05",
+    segment: "上游卡口材料",
+    source: "本地静态快照",
+    type: "docx",
+    path: "本地私有研报，仅公开标题索引。",
+  },
+  {
+    title: "AI算力上游全景报告+材料_四维评分研究报告_20260705",
+    date: "2026-07-05",
+    segment: "AI算力综合",
+    source: "本地静态快照",
+    type: "pdf",
+    path: "本地私有研报，仅公开标题索引。",
+  },
+  {
+    title: "AI算力产业链白皮书研究报告",
+    date: "2026-07-01",
+    segment: "AI算力综合",
+    source: "本地静态快照",
+    type: "pdf",
+    path: "本地私有研报，仅公开标题索引。",
+  },
+  {
+    title: "2026年光模块行业研究：800G放量、1.6T导入、CPO/硅光前瞻",
+    date: "2026-07-08",
+    segment: "光模块/光互联",
+    source: "公开资料静态整理",
+    type: "note",
+    path: "公开网站仅展示摘要索引，原始本地文件不会上传到 GitHub Pages。",
+  },
+];
+
+const onlineReports = [
+  {
+    title: "互联网电商行业点评报告：Meta入局AI云，算力租赁价值再验证",
+    date: "2026-07-08",
+    segment: "AI算力综合",
+    source: "东方财富研报静态快照",
+    org: "东吴证券",
+    pdfUrl: "https://data.eastmoney.com/report/",
+  },
+  {
+    title: "2026年中国第三方算力中心服务商发展研究报告",
+    date: "2026-07-08",
+    segment: "AI算力综合",
+    source: "东方财富研报静态快照",
+    org: "北京智研咨询",
+    pdfUrl: "https://data.eastmoney.com/report/",
+  },
+  {
+    title: "通信行业周报：Meta拟推出云基础设施服务，继续看好AI算力产业链",
+    date: "2026-07-07",
+    segment: "AI算力综合",
+    source: "东方财富研报静态快照",
+    org: "华龙证券",
+    pdfUrl: "https://data.eastmoney.com/report/",
+  },
+  {
+    title: "全数互小图耗电池液冷系列：AI算力时代的隐形刚需，BBU小圆柱迎放量拐点",
+    date: "2026-07-07",
+    segment: "AI算力综合",
+    source: "东方财富研报静态快照",
+    org: "东吴证券",
+    pdfUrl: "https://data.eastmoney.com/report/",
+  },
+  {
+    title: "2026年中国光模块行业概览：AI算力从芯片到光纤的关键一跃",
+    date: "2026-07-07",
+    segment: "光模块/光互联",
+    source: "公开资料静态整理",
+    org: "头豹研究院/公开资料",
+    pdfUrl: "https://ethernetalliance.org/technology/ethernet-roadmap/",
+  },
+  {
+    title: "光互联公开资料：800G仍为放量主流，1.6T进入导入期，3.2T偏下一代路线",
+    date: "2026-07-08",
+    segment: "光模块/光互联",
+    source: "公开资料静态整理",
+    org: "Ethernet Alliance / OIF / OCI MSA",
+    pdfUrl: "https://www.oiforum.com/technical-work/hot-topics/energy-efficient-interfaces/",
+  },
+];
+
 export const publicResearchFallback: ResearchLibrary = {
   as_of: "2026-07-08",
-  local_count: 0,
-  online_count: 0,
-  keywords: ["AI算力", "上游卡口材料", "HBM", "CPO", "PCB", "液冷", "先进封装", "CMP", "WF6", "ABF"],
-  local_reports: [],
-  online_reports: [],
+  local_count: localReports.length,
+  online_count: onlineReports.length,
+  keywords: ["AI算力", "上游卡口材料", "HBM", "CPO", "光模块/光互联", "PCB", "液冷", "先进封装", "CMP", "WF6", "ABF"],
+  local_reports: localReports,
+  online_reports: onlineReports,
   leaders: [
     {
       name: "中船特气",

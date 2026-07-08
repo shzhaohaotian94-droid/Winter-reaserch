@@ -107,7 +107,8 @@ export function ResearchLibrary() {
       .then(setData)
       .catch((e) => {
         setData(publicResearchFallback);
-        setErr(e instanceof Error ? `已进入公开静态模式：${e.message}` : "已进入公开静态模式");
+        const reason = e instanceof Error && e.message && e.message !== "HTTP 404" ? `：${e.message}` : "";
+        setErr(`公开网站没有本机后端，正在展示已打包的静态研报快照${reason}`);
       })
       .finally(() => setLoading(false));
   };
