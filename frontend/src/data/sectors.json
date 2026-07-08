@@ -417,8 +417,8 @@
         {
           "key": "cp0-route",
           "label": "4 CP0路线",
-          "status": "empty",
-          "description": ""
+          "status": "done",
+          "description": "已完成：定义 CP0/CPO、纯增量环节、InP 材料卡口、量产节奏和对可插拔光模块的替代关系。"
         }
       ],
       "subSectors": [],
@@ -774,6 +774,89 @@
           {
             "label": "NVIDIA silicon photonics / CPO public roadmap report",
             "url": "https://www.tomshardware.com/networking/nvidia-outlines-plans-for-using-light-for-communication-between-ai-gpus-by-2026-silicon-photonics-and-co-packaged-optics-may-become-mandatory-for-next-gen-ai-data-centers"
+          }
+        ]
+      },
+      "cpoRoute": {
+        "title": "CP0路线：把光引擎推到交换芯片旁边",
+        "asOf": "2026-07-08",
+        "definition": "这里沿用用户命名“CP0路线”，产业语义对应 CPO（Co-Packaged Optics，共封装光学）。它的核心定义是：把光引擎直接封装到交换芯片 ASIC 旁边，让高速电信号不用再跑很长的铜走线到前面板可插拔光模块，而是在芯片附近就完成电光转换。CP0/CPO 本质上是用封装级光互联替掉“可插拔光模块”这个中间环节，目标是降低功耗、缩短电互联距离、提高端口密度。",
+        "increments": [
+          {
+            "name": "外置激光源",
+            "whyNew": "传统可插拔模块通常把激光器放在模块内部；CP0/CPO 为了降低交换芯片附近热压力、提高可维护性，会把激光源外置或远端化，形成新的光源供应和管理环节。",
+            "bottleneck": "激光器稳定性、功率冗余、热管理、失效隔离和与光引擎的低损耗连接。"
+          },
+          {
+            "name": "光引擎",
+            "whyNew": "传统模块是独立插在前面板的完整收发器；CP0/CPO 把收发功能拆成靠近 ASIC 的光引擎，成为交换芯片封装周边的新增核心部件。",
+            "bottleneck": "小型化、低功耗、高良率、与 ASIC 高速接口的协同封装，以及长期可靠性。"
+          },
+          {
+            "name": "保偏光纤阵列 FAU",
+            "whyNew": "传统模块的光纤连接在模块外部完成；CP0/CPO 需要在封装/板级把多路光稳定耦合出来，FAU 从配套件变成关键增量环节。",
+            "bottleneck": "多通道一致性、微米级对准、低插损、热漂移控制和批量自动化耦合。"
+          },
+          {
+            "name": "微透镜阵列",
+            "whyNew": "光引擎靠近 ASIC 后，光路更短也更密，必须用微透镜阵列完成高密度准直、聚焦和耦合，传统可插拔模块里的部分光学结构会被重构。",
+            "bottleneck": "微纳加工精度、阵列一致性、镀膜、装配良率和长期光学稳定性。"
+          },
+          {
+            "name": "硅光晶圆代工/异质封装",
+            "whyNew": "可插拔模块更多是器件级组装；CP0/CPO 需要硅光 PIC、激光材料、电子芯片和封装平台协同，晶圆代工与异质集成成为新增平台能力。",
+            "bottleneck": "硅光工艺平台、InP/硅异质集成、良率、热应力、封装测试和供应链协同。"
+          }
+        ],
+        "hardestBottleneck": {
+          "material": "上游磷化铟 InP",
+          "conclusion": "整条 CP0/CPO 链最深的材料卡口在上游的磷化铟 InP。它是高性能激光器、调制器、探测器等 III-V 族光电器件的重要底座。CP0/CPO 越往高密度、低功耗、高可靠推进，越依赖高质量 InP 外延和器件能力；所以 InP 是这条链的“限速阀”。",
+          "reasons": [
+            "第一，硅本身不擅长高效率发光，真正高性能光源和部分高速光电器件仍依赖 InP 等 III-V 材料体系；没有稳定高质量 InP，硅光平台也需要外接或异质集成光源。",
+            "第二，InP 难在材料质量和外延一致性：缺陷密度、晶圆尺寸、外延层厚度、掺杂、波长稳定性都会影响激光器寿命和高速性能。",
+            "第三，供给紧是因为高端 InP 衬底和外延产能集中，扩产慢、认证慢、良率爬坡慢；它不像普通电子材料可以快速堆产能。",
+            "第四，CP0/CPO 对可靠性要求更苛刻。光源一旦靠近交换芯片系统，失效维护成本更高，客户会更看重长期稳定和一致性，这会进一步压缩可用供应商范围。"
+          ]
+        },
+        "phases": [
+          {
+            "phase": "小批量验证导入",
+            "timing": "现在到 2027 年",
+            "meaning": "当前更多是头部交换芯片厂、云厂和光器件厂做样机、验证、试点和局部导入。这个阶段证明的是路线可行性、功耗收益和系统可靠性，不等于行业大规模收入兑现。",
+            "signal": "看样机发布、头部客户验证、交换芯片平台绑定、外置激光源和光引擎供应链定点。"
+          },
+          {
+            "phase": "全行业真正放量",
+            "timing": "大约 2028-2029 年",
+            "meaning": "当 1.6T/3.2T 可插拔模块在功耗、前面板密度和铜走线距离上继续逼近瓶颈，CP0/CPO 才会从验证导入转向规模化部署。这个阶段才是产业链纯增量环节真正放量。",
+            "signal": "看头部云厂批量采购、交换机平台标配 CPO、外置激光源规模出货、硅光代工良率提升和 InP 供应链扩产。"
+          }
+        ],
+        "replacement": {
+          "conclusion": "CP0/CPO 和现在的可插拔光模块，是“下一代替代上一代”的关系，不是简单并列新增。短期它们会共存：800G/1.6T 可插拔模块继续放量，CP0/CPO 做验证和局部导入；中长期，当 3.2T 以及更高带宽成为主流后，CP0/CPO 会逐步替代一部分高端可插拔光模块。",
+          "details": [
+            "可插拔光模块的优势是标准化、可维护、产业成熟，适合 800G 和早期 1.6T 放量。",
+            "CP0/CPO 的优势是把光电转换推近交换 ASIC，减少高速铜走线，从系统层面降低功耗、提升端口密度。",
+            "替代不是一夜发生：低速、通用、维护敏感场景仍会保留可插拔；最高速、最高密度、功耗最紧的 AI 训练网络会率先转向 CP0/CPO。",
+            "投资上要分清：当下收入兑现看可插拔光模块，远期估值弹性看 CP0/CPO 的外置激光源、光引擎、FAU、微透镜、硅光代工/异质封装。"
+          ]
+        },
+        "sources": [
+          {
+            "label": "OIF Energy Efficient Interfaces",
+            "url": "https://www.oiforum.com/technical-work/hot-topics/energy-efficient-interfaces/"
+          },
+          {
+            "label": "NVIDIA silicon photonics / CPO public roadmap report",
+            "url": "https://www.tomshardware.com/networking/nvidia-outlines-plans-for-using-light-for-communication-between-ai-gpus-by-2026-silicon-photonics-and-co-packaged-optics-may-become-mandatory-for-next-gen-ai-data-centers"
+          },
+          {
+            "label": "IEEE P802.3dj Task Force",
+            "url": "https://www.ieee802.org/3/dj/"
+          },
+          {
+            "label": "800G Pluggable MSA",
+            "url": "https://www.800gmsa.com/"
           }
         ]
       }

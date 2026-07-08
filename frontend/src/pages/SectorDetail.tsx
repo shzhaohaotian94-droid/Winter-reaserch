@@ -115,6 +115,37 @@ type LeaderLandscape = {
   sources: { label: string; url: string }[];
 };
 
+type CpoIncrement = {
+  name: string;
+  whyNew: string;
+  bottleneck: string;
+};
+
+type CpoPhase = {
+  phase: string;
+  timing: string;
+  meaning: string;
+  signal: string;
+};
+
+type CpoRoute = {
+  title: string;
+  asOf: string;
+  definition: string;
+  increments: CpoIncrement[];
+  hardestBottleneck: {
+    material: string;
+    conclusion: string;
+    reasons: string[];
+  };
+  phases: CpoPhase[];
+  replacement: {
+    conclusion: string;
+    details: string[];
+  };
+  sources: { label: string; url: string }[];
+};
+
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
 const tierOf = (score: number) => (score >= 8.5 ? "S" : score >= 7 ? "A" : score >= 5.5 ? "B" : score >= 4 ? "C" : "出局");
 
@@ -461,6 +492,92 @@ function LeaderLandscapePanel({ landscape }: { landscape: LeaderLandscape }) {
   );
 }
 
+function CpoRoutePanel({ route }: { route: CpoRoute }) {
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">4 CP0路线 · {route.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{route.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{route.definition}</p>
+        </div>
+        <Network className="h-6 w-6 text-primary" />
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">纯增量品类：CP0 相比可插拔光模块新增的 5 个环节</h3>
+        <div className="grid gap-3 lg:grid-cols-5">
+          {route.increments.map((item) => (
+            <div key={item.name} className="rounded-lg border border-primary/25 bg-primary/5 p-4">
+              <h4 className="mb-2 text-sm font-bold text-primary">{item.name}</h4>
+              <p className="text-xs leading-5 text-muted-foreground">{item.whyNew}</p>
+              <p className="mt-3 rounded bg-muted/30 p-2 text-xs leading-5 text-muted-foreground">
+                <b className="text-foreground">卡口：</b>{item.bottleneck}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+        <h3 className="text-sm font-bold text-red-300">最硬卡口：{route.hardestBottleneck.material}</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{route.hardestBottleneck.conclusion}</p>
+        <div className="mt-3 space-y-1.5">
+          {route.hardestBottleneck.reasons.map((reason) => (
+            <p key={reason} className="text-xs leading-5 text-muted-foreground">{reason}</p>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">量产节奏：验证导入不等于全行业放量</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          {route.phases.map((phase) => (
+            <div key={phase.phase} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h4 className="text-sm font-bold">{phase.phase}</h4>
+                <span className="rounded bg-muted/50 px-2 py-0.5 text-[11px] text-muted-foreground">{phase.timing}</span>
+              </div>
+              <p className="text-sm leading-6 text-muted-foreground">{phase.meaning}</p>
+              <p className="mt-3 rounded bg-muted/30 p-2 text-xs leading-5 text-muted-foreground">
+                <b className="text-foreground">跟踪信号：</b>{phase.signal}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <h3 className="text-sm font-bold text-primary">替代关系：下一代替代上一代</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{route.replacement.conclusion}</p>
+        <div className="mt-3 space-y-1.5">
+          {route.replacement.details.map((detail) => (
+            <p key={detail} className="text-xs leading-5 text-muted-foreground">{detail}</p>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border/60 pt-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">引用来源</p>
+        <div className="flex flex-wrap gap-2">
+          {route.sources.map((source) => (
+            <a
+              key={source.url}
+              href={source.url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              {source.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+
 
 export function SectorDetail() {
   const { key } = useParams();
@@ -479,6 +596,7 @@ export function SectorDetail() {
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
   const leaderLandscape = ((sector as unknown as { leaderLandscape?: LeaderLandscape }).leaderLandscape);
+  const cpoRoute = ((sector as unknown as { cpoRoute?: CpoRoute }).cpoRoute);
   const aiContext =
     `板块：${sector.label}\n定位：${sector.tagline}\n产业链环节：` +
     (sector.nodes.length ? sector.nodes.join("、") : "（环节梳理中）") +
@@ -546,6 +664,8 @@ export function SectorDetail() {
           {techChain && <TechChainPanel techChain={techChain} />}
 
           {leaderLandscape && <LeaderLandscapePanel landscape={leaderLandscape} />}
+
+          {cpoRoute && <CpoRoutePanel route={cpoRoute} />}
 
           {subSectors.length > 0 && (
             <div>
