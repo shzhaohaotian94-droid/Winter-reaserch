@@ -405,8 +405,8 @@
         {
           "key": "tech-chain",
           "label": "2 技术路线及产业链",
-          "status": "empty",
-          "description": ""
+          "status": "done",
+          "description": "已完成：拆解 400G/800G/1.6T/3.2T 技术代际、五段产业链和卡口排序。"
         },
         {
           "key": "leaders",
@@ -531,6 +531,141 @@
           {
             "label": "NVIDIA silicon photonics / CPO public roadmap report",
             "url": "https://www.tomshardware.com/networking/nvidia-outlines-plans-for-using-light-for-communication-between-ai-gpus-by-2026-silicon-photonics-and-co-packaged-optics-may-become-mandatory-for-next-gen-ai-data-centers"
+          }
+        ]
+      },
+      "techChain": {
+        "title": "技术路线及产业链：从可插拔光模块到共封装光学",
+        "asOf": "2026-07-08",
+        "thesis": "光互联的速率翻倍，本质不是简单把模块做大，而是在“单波速率、通道数量、调制方式、DSP/SerDes、封装散热、光芯片良率”之间不断重新平衡。400G 到 800G 主要靠 100G 单通道 PAM4 的规模化；800G 到 1.6T 进入 200G/lane 和 8 通道高密度时代；3.2T 则需要 200G 通道继续堆叠或向 400G/lane 演进，并推动板载光学、CPO/CP0 和更靠近芯片的光通信。",
+        "generations": [
+          {
+            "generation": "400G",
+            "status": "成熟/存量",
+            "moduleRate": "400Gb/s",
+            "perLambda": "主流 100G/lambda；部分早期方案为 50G/lane",
+            "channels": "4×100G 或 8×50G",
+            "modulation": "PAM4 为主",
+            "keyChange": "400G 完成了数据中心从 NRZ 向 PAM4 的主流迁移，核心是用 4 电平调制提高单通道承载效率。产业侧难点集中在 100G 光芯片、DSP、FEC 和高频封装的一致性。"
+          },
+          {
+            "generation": "800G",
+            "status": "2026 放量主流",
+            "moduleRate": "800Gb/s",
+            "perLambda": "主流 100G/lambda；高端方案开始切向 200G/lane",
+            "channels": "8×100G 为主，4×200G 开始导入",
+            "modulation": "PAM4 为主，叠加更强 DSP/FEC",
+            "keyChange": "800G 的主流放量不是调制方式突变，而是把 100G 单通道做成更高密度 8 通道模块，同时对功耗、散热、良率和高速电接口提出更高要求。"
+          },
+          {
+            "generation": "1.6T",
+            "status": "导入/定点",
+            "moduleRate": "1.6Tb/s",
+            "perLambda": "200G/lane 成为关键门槛",
+            "channels": "8×200G 为主线；16×100G 可作为过渡但体积和功耗压力更大",
+            "modulation": "PAM4 继续主导，200G SerDes、DSP 和光电封装升级",
+            "keyChange": "1.6T 的关键是从堆通道转向提升单通道速率，200G/lane 把光芯片带宽、DSP 功耗、PCB 走线、散热和封装良率一起推到新门槛。"
+          },
+          {
+            "generation": "3.2T",
+            "status": "下一代路线",
+            "moduleRate": "3.2Tb/s",
+            "perLambda": "200G/lane 继续堆叠，或向 400G/lane 预研",
+            "channels": "16×200G 或 8×400G 的路线竞争",
+            "modulation": "PAM4 延续并逼近功耗边界，未来可能叠加更复杂调制和相干/线性化方案",
+            "keyChange": "3.2T 不只是模块规格升级，而是系统架构开始被迫变化：可插拔模块的前面板密度、铜走线距离和功耗都接近瓶颈，板载光学与 CPO/CP0 的必要性上升。"
+          }
+        ],
+        "chain": [
+          {
+            "order": 1,
+            "title": "上游材料/衬底",
+            "examples": ["磷化铟 InP", "硅光晶圆", "保偏光纤"],
+            "role": "决定光芯片效率、波长稳定性、硅光平台一致性和器件可靠性，是高端光器件的材料底座。"
+          },
+          {
+            "order": 2,
+            "title": "光芯片和器件",
+            "examples": ["激光芯片", "硅光 PIC", "DSP", "探测器"],
+            "role": "完成电信号和光信号之间的核心转换，是速率、功耗、良率和成本的主战场。"
+          },
+          {
+            "order": 3,
+            "title": "光引擎/光模块封装",
+            "examples": ["光引擎", "TOSA/ROSA", "800G/1.6T 模块", "热管理封装"],
+            "role": "把芯片、器件、光路、电路和散热装进可量产模块，决定交付能力和客户认证速度。"
+          },
+          {
+            "order": 4,
+            "title": "系统集成",
+            "examples": ["交换机", "光模块整机", "高速连接器", "网络设备"],
+            "role": "把模块接入交换机和 AI 网络系统，约束前面板密度、功耗预算、互联拓扑和运维可靠性。"
+          },
+          {
+            "order": 5,
+            "title": "需求端",
+            "examples": ["AI 数据中心", "超大训练集群", "云厂商资本开支"],
+            "role": "决定代际切换节奏。大模型训练、推理集群和东西向流量增长，是 800G/1.6T 放量的根本驱动。"
+          }
+        ],
+        "bottlenecks": [
+          {
+            "rank": 1,
+            "segment": "光芯片和器件",
+            "hardness": "最高",
+            "reason": "激光芯片、硅光 PIC、探测器和 DSP 直接决定单波速率、功耗、良率和可靠性。越往 1.6T/3.2T 走，200G/lane、热稳定、封装耦合和客户认证越难，替代门槛最高。"
+          },
+          {
+            "rank": 2,
+            "segment": "上游材料/衬底",
+            "hardness": "很高",
+            "reason": "InP 衬底、硅光晶圆和保偏光纤属于质量一致性和工艺积累型卡口，验证周期长；但它们通常通过器件性能体现，离终端收入兑现更远。"
+          },
+          {
+            "rank": 3,
+            "segment": "光引擎/光模块封装",
+            "hardness": "高",
+            "reason": "高速模块封装要同时解决光路耦合、电路完整性、散热、良率和批量交付。国内模块厂全球竞争力较强，但从 800G 到 1.6T 后，工程壁垒继续抬升。"
+          },
+          {
+            "rank": 4,
+            "segment": "系统集成",
+            "hardness": "中高",
+            "reason": "交换机和整机集成壁垒在系统架构、客户生态和可靠性，强者集中度高；但对 A 股映射通常不如光芯片/模块直接。"
+          },
+          {
+            "rank": 5,
+            "segment": "需求端",
+            "hardness": "需求驱动",
+            "reason": "AI 数据中心和超大训练集群决定需求强度，但它是下游资本开支和算力周期，不是供应链最硬的制造卡口。"
+          }
+        ],
+        "hardestBottleneck": {
+          "segment": "第二段：光芯片和器件",
+          "conclusion": "整条链最硬的卡口在“光芯片和器件”，尤其是高速激光芯片、硅光 PIC、探测器与 DSP/SerDes 的组合能力。模块厂能把器件封装成交付产品，但真正决定 1.6T/3.2T 能否低功耗、高良率、长期稳定运行的，是光电转换核心器件。",
+          "reasons": [
+            "第一，代际升级的瓶颈首先落在单通道速率：从 100G/lane 到 200G/lane，再到未来 400G/lane，光芯片带宽、线性度、噪声和热稳定都要同步提高。",
+            "第二，AI 集群不只要峰值速率，还要大规模长时间稳定运行；激光器寿命、探测器灵敏度、硅光耦合损耗和 DSP 功耗都会直接影响 TCO。",
+            "第三，器件验证周期长、客户导入慢、良率爬坡难。一旦进入头部云厂和网络设备商供应链，粘性很强；没进则很难靠低价快速替代。",
+            "第四，上游材料很硬，但它最终要通过器件性能兑现；封装和模块也有高工程壁垒，但更偏集成能力。真正卡住代际天花板的是第二段的核心光电器件。"
+          ]
+        },
+        "sources": [
+          {
+            "label": "Ethernet Alliance 2026 Ethernet Roadmap",
+            "url": "https://ethernetalliance.org/technology/ethernet-roadmap/"
+          },
+          {
+            "label": "OIF Energy Efficient Interfaces",
+            "url": "https://www.oiforum.com/technical-work/hot-topics/energy-efficient-interfaces/"
+          },
+          {
+            "label": "IEEE P802.3dj Task Force",
+            "url": "https://www.ieee802.org/3/dj/"
+          },
+          {
+            "label": "800G Pluggable MSA",
+            "url": "https://www.800gmsa.com/"
           }
         ]
       }

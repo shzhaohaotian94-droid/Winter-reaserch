@@ -53,6 +53,45 @@ type ResearchOverview = {
   sources: { label: string; url: string }[];
 };
 
+type TechGeneration = {
+  generation: string;
+  status: string;
+  moduleRate: string;
+  perLambda: string;
+  channels: string;
+  modulation: string;
+  keyChange: string;
+};
+
+type ChainSegment = {
+  order: number;
+  title: string;
+  examples: string[];
+  role: string;
+};
+
+type BottleneckRank = {
+  rank: number;
+  segment: string;
+  hardness: string;
+  reason: string;
+};
+
+type TechChain = {
+  title: string;
+  asOf: string;
+  thesis: string;
+  generations: TechGeneration[];
+  chain: ChainSegment[];
+  bottlenecks: BottleneckRank[];
+  hardestBottleneck: {
+    segment: string;
+    conclusion: string;
+    reasons: string[];
+  };
+  sources: { label: string; url: string }[];
+};
+
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
 const tierOf = (score: number) => (score >= 8.5 ? "S" : score >= 7 ? "A" : score >= 5.5 ? "B" : score >= 4 ? "C" : "出局");
 
@@ -197,6 +236,101 @@ function OverviewPanel({ overview }: { overview: ResearchOverview }) {
   );
 }
 
+function TechChainPanel({ techChain }: { techChain: TechChain }) {
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">2 技术路线及产业链 · {techChain.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{techChain.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{techChain.thesis}</p>
+        </div>
+        <Boxes className="h-6 w-6 text-primary" />
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">技术代际：400G → 800G → 1.6T → 3.2T</h3>
+        <div className="grid gap-3 xl:grid-cols-4">
+          {techChain.generations.map((item) => (
+            <div key={item.generation} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-lg font-extrabold text-primary">{item.generation}</p>
+                <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] text-primary">{item.status}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <p><b className="text-foreground">模块速率：</b><span className="text-muted-foreground">{item.moduleRate}</span></p>
+                <p><b className="text-foreground">单波速率：</b><span className="text-muted-foreground">{item.perLambda}</span></p>
+                <p><b className="text-foreground">通道数：</b><span className="text-muted-foreground">{item.channels}</span></p>
+                <p><b className="text-foreground">调制：</b><span className="text-muted-foreground">{item.modulation}</span></p>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">{item.keyChange}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">产业链链路图</h3>
+        <div className="grid gap-3 lg:grid-cols-5">
+          {techChain.chain.map((segment) => (
+            <div key={segment.order} className="relative rounded-lg border border-primary/25 bg-primary/5 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">{segment.order}</span>
+                <h4 className="text-sm font-bold">{segment.title}</h4>
+              </div>
+              <ChipList items={segment.examples} />
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">{segment.role}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">从左到右：材料/衬底 → 光芯片和器件 → 光引擎/模块封装 → 系统集成 → AI 数据中心需求端。</p>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">卡口排序</h3>
+        <div className="grid gap-3 lg:grid-cols-5">
+          {techChain.bottlenecks.map((item) => (
+            <div key={item.segment} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-bold">#{item.rank} {item.segment}</p>
+                <span className="rounded bg-muted/50 px-2 py-0.5 text-[11px] text-muted-foreground">{item.hardness}</span>
+              </div>
+              <p className="text-xs leading-5 text-muted-foreground">{item.reason}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <p className="text-sm font-bold text-primary">最硬卡口：{techChain.hardestBottleneck.segment}</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{techChain.hardestBottleneck.conclusion}</p>
+        <div className="mt-3 space-y-1.5">
+          {techChain.hardestBottleneck.reasons.map((reason) => (
+            <p key={reason} className="text-xs leading-5 text-muted-foreground">{reason}</p>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border/60 pt-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">引用来源</p>
+        <div className="flex flex-wrap gap-2">
+          {techChain.sources.map((source) => (
+            <a
+              key={source.url}
+              href={source.url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              {source.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
 export function SectorDetail() {
   const { key } = useParams();
   const sector = sectorsData.sectors.find((s) => s.key === key);
@@ -212,6 +346,7 @@ export function SectorDetail() {
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
+  const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
   const aiContext =
     `板块：${sector.label}\n定位：${sector.tagline}\n产业链环节：` +
     (sector.nodes.length ? sector.nodes.join("、") : "（环节梳理中）") +
@@ -275,6 +410,8 @@ export function SectorDetail() {
           )}
 
           {overview && <OverviewPanel overview={overview} />}
+
+          {techChain && <TechChainPanel techChain={techChain} />}
 
           {subSectors.length > 0 && (
             <div>
