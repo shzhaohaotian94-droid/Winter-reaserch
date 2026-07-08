@@ -12,6 +12,12 @@ import {
   winterSectors,
   winterWatchDefaults,
 } from "@/data/winterResearch";
+import {
+  publicGlobalIndexSnapshot,
+  publicIndexSnapshot,
+  publicMarketSnapshotAsOf,
+  publicQuoteSnapshot,
+} from "@/data/publicMarket";
 
 const WATCH_KEY = "winter-dashboard-watchlist";
 const pctColor = (p: number | null | undefined) =>
@@ -42,13 +48,29 @@ export function WinterDashboard() {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [staticMode, setStaticMode] = useState(false);
 
   const refresh = (watchCodes = codes) => {
     setLoading(true);
-    api.indices().then(setIndices).catch(() => {});
-    api.globalIndices().then(setGlobalIndices).catch(() => {});
+    setStaticMode(false);
+    api.indices().then(setIndices).catch(() => {
+      setIndices(publicIndexSnapshot);
+      setStaticMode(true);
+    });
+    api.globalIndices().then(setGlobalIndices).catch(() => {
+      setGlobalIndices(publicGlobalIndexSnapshot);
+      setStaticMode(true);
+    });
     if (watchCodes.length) {
-      api.quote(watchCodes.join(",")).then(setQuotes).catch(() => {});
+      api.quote(watchCodes.join(",")).then(setQuotes).catch(() => {
+        const fallbackQuotes = Object.fromEntries(
+          watchCodes
+            .filter((code) => publicQuoteSnapshot[code])
+            .map((code) => [code, publicQuoteSnapshot[code]]),
+        );
+        setQuotes(fallbackQuotes);
+        setStaticMode(true);
+      });
     } else {
       setQuotes({});
     }
@@ -120,6 +142,11 @@ export function WinterDashboard() {
             <Sparkles className="h-5 w-5 text-primary" />
           </div>
           <p className="rounded-lg bg-muted/30 p-3 text-sm leading-6 text-muted-foreground">{marketLine}</p>
+          {staticMode && (
+            <p className="mt-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              公开网站没有实时行情后端，当前显示截至 {publicMarketSnapshotAsOf} 的静态市场快照；本地版可刷新实时数据。
+            </p>
+          )}
 
           <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             {indices.map((i) => (
