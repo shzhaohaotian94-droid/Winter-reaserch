@@ -388,14 +388,19 @@
       "tagline": "Optical Interconnect：AI 数据中心从 400G/800G 向 1.6T/3.2T 演进的互联瓶颈",
       "hot": true,
       "verified": true,
-      "nodes": [],
+      "nodes": [
+        "可插拔光模块",
+        "板载光学",
+        "CPO/CP0 共封装光学",
+        "片间光通信"
+      ],
       "slug": "OpticalInterconnect",
       "tags": [
         {
           "key": "overview",
           "label": "1 总览",
-          "status": "empty",
-          "description": ""
+          "status": "done",
+          "description": "已完成：解释光互联为什么是 AI 算力集群绕不开的架构，并给出代际与市场量级。"
         },
         {
           "key": "tech-chain",
@@ -416,7 +421,119 @@
           "description": ""
         }
       ],
-      "subSectors": []
+      "subSectors": [],
+      "overview": {
+        "title": "光互联：AI 算力集群的带宽与功耗底座",
+        "asOf": "2026-07-08",
+        "thesis": "光互联不是一个单独器件，而是 AI 训练集群继续扩大的基础架构：芯片和芯片之间、机架和机架之间，需要用光把数据搬得更远、更快、更省电。训练集群规模越大，参数、梯度、激活值和 KV Cache 在 GPU/ASIC、交换机、机柜之间来回流动越多，互联带宽需求呈阶梯式甚至指数级抬升；铜互联在高速下的损耗、串扰、散热和功耗会越来越难承受，因此系统会沿着可插拔光模块 -> 板载光学 -> CP0/CPO 共封装光学 -> 更远的片间光通信演进。",
+        "sections": [
+          {
+            "title": "1. 一句话定性：光互联是什么",
+            "bullets": [
+              "光互联就是在芯片和芯片之间、服务器和交换机之间、机架和机架之间，用“光”而不是“铜”传数据。它的作用不是算力本身，而是让算力单元之间交换数据时不被带宽、距离和功耗卡住。",
+              "在 AI 训练集群里，单颗 GPU/ASIC 只是算力节点，真正的训练效率取决于成千上万颗芯片能不能像一个系统一样同步工作。模型越大、并行度越高，All-Reduce、参数同步、MoE 路由、存储访问和东西向流量越重，互联就从配套件变成主瓶颈。",
+              "所以光互联的投资逻辑不是“光模块涨价”这么窄，而是 AI 集群从单机走向超大规模网络时，必须升级的数据搬运架构。"
+            ]
+          },
+          {
+            "title": "2. 为什么现在爆发：铜的物理极限 + AI 带宽需求抬升",
+            "bullets": [
+              "铜线在低速、短距、低功耗场景下便宜好用，但速率越高，插损、反射、串扰、均衡补偿和散热压力越大。到约 100GHz 以上的高频高速链路，铜互联的损耗和功耗会快速恶化，继续靠铜“硬扛”越来越不经济。",
+              "AI 训练集群对带宽的需求不是线性增加：模型参数扩大、GPU 数量增加、并行训练拆分更细，都会让芯片间、节点间、机柜间的数据交换频率和总量阶梯式上升。算力芯片越强，越需要更高带宽、更低延迟、更低功耗的网络把它们连起来。",
+              "这就是为什么行业路线会从可插拔光模块继续往前推进到板载光学、CP0/CPO 共封装光学，再往更远的片间光通信发展：不是为了炫技，而是为了把光电转换位置不断靠近计算芯片，减少高速电信号在铜上的传输距离。"
+            ]
+          },
+          {
+            "title": "3. 现在大致走到哪一代",
+            "bullets": [
+              "截至 2026 年，产业主流仍在“可插拔光模块”阶段，800G 是 AI 数据中心放量主线，1.6T 已进入加速导入、样品验证和客户定点阶段。",
+              "3.2T 更偏下一代路线：标准、SerDes、光引擎、封装和系统架构仍在推进，更多体现为 2027 年以后技术预期和平台卡位。",
+              "板载光学、LPO、硅光和 CP0/CPO 是从“模块升级”走向“系统架构升级”的过渡。真正的 CP0/CPO 大规模放量还不是 2026 年主流收入来源，但它已经是超大 AI 集群绕不开的方向。"
+            ]
+          },
+          {
+            "title": "4. 投资上先抓哪条主线",
+            "bullets": [
+              "短中期主线：800G/1.6T 可插拔光模块和配套光器件，这是 2026 年收入兑现最清楚的链条。",
+              "中期主线：硅光、LPO、板载光学、光引擎、连接器和高速交换芯片，这是从模块到系统的过渡层。",
+              "远期主线：CP0/CPO 共封装光学和片间光通信，这是当铜互联继续失效后，把光推进到封装、板级甚至芯片级附近的方向。"
+            ]
+          }
+        ],
+        "generationMap": [
+          {
+            "stage": "400G",
+            "status": "上一代/存量",
+            "role": "AI 早期集群与传统数据中心升级",
+            "note": "已经不是最强增量主线，但仍有存量替换和部分场景需求。"
+          },
+          {
+            "stage": "800G",
+            "status": "2026 放量主流",
+            "role": "AI 数据中心当前核心放量规格",
+            "note": "可插拔光模块仍是收入兑现最明确的环节，国内模块厂在全球链条里位置较强。"
+          },
+          {
+            "stage": "1.6T",
+            "status": "导入/定点",
+            "role": "下一轮 AI 集群带宽升级",
+            "note": "从样品、验证、定点走向规模化，关注客户认证、良率、DSP/硅光和热管理。"
+          },
+          {
+            "stage": "3.2T",
+            "status": "下一代路线",
+            "role": "更高密度光互联与系统预研",
+            "note": "更偏 2027 年以后路线，和 224G/更高速 SerDes、OCI、CPO、硅光平台相关。"
+          },
+          {
+            "stage": "板载光学 -> CP0/CPO -> 片间光通信",
+            "status": "架构升级",
+            "role": "减少铜传输距离，把光靠近芯片",
+            "note": "当可插拔模块也难以满足功耗和密度时，光电转换会从面板侧向板级、封装级、片间推进。"
+          }
+        ],
+        "marketSizing": [
+          {
+            "metric": "Optical interconnect 当前量级",
+            "value": "约 180 亿美元",
+            "year": "2026 年公开口径",
+            "source": "Lumentum / MarketWatch 公开报道",
+            "note": "该口径指 optical interconnect TAM 的当前规模，适合作为大赛道量级参考，而非单一 A 股收入口径。"
+          },
+          {
+            "metric": "Optical interconnect 2030 展望",
+            "value": "约 900 亿美元",
+            "year": "2030 年预测",
+            "source": "Lumentum / MarketWatch 公开报道",
+            "note": "从 180 亿美元到 900 亿美元，对应约 5 倍空间，隐含 2026-2030 年高双位数年化增长。"
+          },
+          {
+            "metric": "2026 代际位置",
+            "value": "800G 主流，1.6T 导入，3.2T 预研",
+            "year": "2026 年判断",
+            "source": "Ethernet Alliance / OIF / 产业公开资料",
+            "note": "Ethernet Alliance 2026 Roadmap 已把 AI-scale 100G-800G 与 emerging 1.6Tb/s Ethernet 放在同一演进框架下。"
+          }
+        ],
+        "sources": [
+          {
+            "label": "Ethernet Alliance 2026 Ethernet Roadmap",
+            "url": "https://ethernetalliance.org/technology/ethernet-roadmap/"
+          },
+          {
+            "label": "OIF Energy Efficient Interfaces",
+            "url": "https://www.oiforum.com/technical-work/hot-topics/energy-efficient-interfaces/"
+          },
+          {
+            "label": "Lumentum optical interconnect TAM public report, 2026",
+            "url": "https://www.marketwatch.com/story/lumentum-shares-rocket-on-forecast-raises-market-opportunity-estimates-3f936db7"
+          },
+          {
+            "label": "NVIDIA silicon photonics / CPO public roadmap report",
+            "url": "https://www.tomshardware.com/networking/nvidia-outlines-plans-for-using-light-for-communication-between-ai-gpus-by-2026-silicon-photonics-and-co-packaged-optics-may-become-mandatory-for-next-gen-ai-data-centers"
+          }
+        ]
+      }
     },
     {
       "key": "semiconductor",

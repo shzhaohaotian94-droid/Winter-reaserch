@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags, Network, RadioTower } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AskAiButton } from "@/components/ui/AskAiButton";
@@ -21,6 +21,36 @@ type ResearchTag = {
   label: string;
   status?: string;
   description?: string;
+};
+
+type OverviewSection = {
+  title: string;
+  bullets: string[];
+};
+
+type GenerationStep = {
+  stage: string;
+  status: string;
+  role: string;
+  note: string;
+};
+
+type MarketSizing = {
+  metric: string;
+  value: string;
+  year: string;
+  source: string;
+  note: string;
+};
+
+type ResearchOverview = {
+  title: string;
+  asOf: string;
+  thesis: string;
+  sections: OverviewSection[];
+  generationMap: GenerationStep[];
+  marketSizing: MarketSizing[];
+  sources: { label: string; url: string }[];
 };
 
 const sumScore = (dims?: number[]) => (dims || []).reduce((acc, n) => acc + n, 0);
@@ -90,6 +120,83 @@ function SubSectorCard({ item }: { item: SubSector }) {
   );
 }
 
+function OverviewPanel({ overview }: { overview: ResearchOverview }) {
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">1 总览 · {overview.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">{overview.title}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{overview.thesis}</p>
+        </div>
+        <Network className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {overview.sections.map((section) => (
+          <div key={section.title} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+            <h3 className="mb-3 text-sm font-bold">{section.title}</h3>
+            <div className="space-y-2">
+              {section.bullets.map((bullet) => (
+                <p key={bullet} className="text-sm leading-6 text-muted-foreground">{bullet}</p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
+          <RadioTower className="h-4 w-4 text-primary" /> 代际演进地图
+        </h3>
+        <div className="grid gap-3 lg:grid-cols-5">
+          {overview.generationMap.map((step) => (
+            <div key={step.stage} className="rounded-lg border border-primary/25 bg-primary/5 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-bold">{step.stage}</p>
+                <span className="rounded bg-muted/50 px-2 py-0.5 text-[11px] text-muted-foreground">{step.status}</span>
+              </div>
+              <p className="text-xs font-medium text-foreground">{step.role}</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.note}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-base font-bold">市场量级</h3>
+        <div className="grid gap-3 md:grid-cols-3">
+          {overview.marketSizing.map((item) => (
+            <div key={item.metric} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <p className="text-xs text-muted-foreground">{item.metric}</p>
+              <p className="mt-1 text-lg font-extrabold text-primary">{item.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.year} · {item.source}</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.note}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border/60 pt-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">引用来源</p>
+        <div className="flex flex-wrap gap-2">
+          {overview.sources.map((source) => (
+            <a
+              key={source.url}
+              href={source.url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-primary"
+            >
+              {source.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
 export function SectorDetail() {
   const { key } = useParams();
   const sector = sectorsData.sectors.find((s) => s.key === key);
@@ -104,6 +211,7 @@ export function SectorDetail() {
 
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
+  const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const aiContext =
     `板块：${sector.label}\n定位：${sector.tagline}\n产业链环节：` +
     (sector.nodes.length ? sector.nodes.join("、") : "（环节梳理中）") +
@@ -165,6 +273,8 @@ export function SectorDetail() {
               </div>
             </div>
           )}
+
+          {overview && <OverviewPanel overview={overview} />}
 
           {subSectors.length > 0 && (
             <div>
