@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags, Network, RadioTower, ScanSearch } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Boxes, FlaskConical, Target, Gauge, Tags, Network, RadioTower, ScanSearch, AlertTriangle, Activity, BookOpen } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AskAiButton } from "@/components/ui/AskAiButton";
@@ -146,25 +147,6 @@ type CpoRoute = {
   sources: { label: string; url: string }[];
 };
 
-type BottleneckLeader = {
-  bottleneck: string;
-  position: string;
-  globalLeaders: string[];
-  chinaLeaders: string[];
-  preferredTargets: string[];
-  serenity: number[];
-  rating: string;
-  reason: string;
-  caveat: string;
-};
-
-type BottleneckLeaderSummary = {
-  title: string;
-  asOf: string;
-  scoringNote: string;
-  leaders: BottleneckLeader[];
-};
-
 type StockScore = {
   tag: string;
   name: string;
@@ -191,6 +173,10 @@ type ModuleResearch = {
   barrierType: string;
   competition: string;
   scoringFocus: string[];
+  bottleneck?: string;
+  globalLeaders?: string[];
+  chinaLeaders?: string[];
+  trackingSignals?: string[];
 };
 
 type ModuleResearchSummary = {
@@ -198,6 +184,25 @@ type ModuleResearchSummary = {
   asOf: string;
   note: string;
   modules: ModuleResearch[];
+};
+
+type SectorSnapshot = {
+  asOf: string;
+  thesis: string;
+  stage: string;
+  hardestBottleneck: string;
+  chinaPosition: string;
+  catalysts: string[];
+  risks: string[];
+  evidenceNote: string;
+};
+
+type ResearchPage = {
+  key: string;
+  label: string;
+  summary: string;
+  sections: OverviewSection[];
+  sources?: { label: string; url: string }[];
 };
 
 const SERENITY_DIMENSIONS = ["物理卡口", "国产替代", "下游刚需", "市场空间", "催化剂", "动态PEG", "认知差"];
@@ -269,70 +274,12 @@ function SubSectorCard({ item }: { item: SubSector }) {
   );
 }
 
-function BottleneckLeaderSummaryPanel({ summary }: { summary: BottleneckLeaderSummary }) {
-  const sorted = [...summary.leaders].sort((a, b) => sumScore(b.serenity) - sumScore(a.serenity));
-
-  return (
-    <GlassCard className="space-y-5 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-primary">Serenity 龙头评分 · {summary.asOf}</p>
-          <h2 className="mt-1 text-xl font-extrabold">{summary.title}</h2>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{summary.scoringNote}</p>
-        </div>
-        <Gauge className="h-6 w-6 text-primary" />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {sorted.map((item) => {
-          const score = sumScore(item.serenity);
-          return (
-            <div key={item.bottleneck} className="rounded-lg border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-primary">{item.bottleneck}</p>
-                  <h3 className="mt-1 text-base font-bold">{item.position}</h3>
-                </div>
-                <div className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-right">
-                  <div className="text-[11px] text-muted-foreground">Serenity</div>
-                  <div className="text-lg font-extrabold text-primary">{score.toFixed(1)} {tierOf(score)}</div>
-                  <div className="text-[11px] text-muted-foreground">{item.rating}</div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted-foreground">全球龙头</p>
-                  <ChipList items={item.globalLeaders} />
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted-foreground">中国映射</p>
-                  <ChipList items={item.chinaLeaders} tone="target" />
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted-foreground">优先跟踪</p>
-                  <ChipList items={item.preferredTargets} tone="target" />
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <p className="rounded bg-muted/25 p-3 text-xs leading-5 text-muted-foreground">
-                  <b className="text-foreground">评分理由：</b>{item.reason}
-                </p>
-                <p className="rounded bg-muted/25 p-3 text-xs leading-5 text-muted-foreground">
-                  <b className="text-foreground">扣分项：</b>{item.caveat}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </GlassCard>
-  );
-}
-
 function StockScoreSummaryPanel({ summary }: { summary: StockScoreSummary }) {
   const sorted = [...summary.stocks].sort((a, b) => sumScore(b.serenity) - sumScore(a.serenity));
+  const [showAll, setShowAll] = useState(false);
+  const visibleStocks = showAll ? sorted : sorted.slice(0, 10);
+
+  useEffect(() => setShowAll(false), [summary.title]);
 
   return (
     <GlassCard className="space-y-5 p-5">
@@ -363,7 +310,7 @@ function StockScoreSummaryPanel({ summary }: { summary: StockScoreSummary }) {
           <span>七维分项</span>
         </div>
         <div className="divide-y divide-border/60">
-          {sorted.map((stock, index) => {
+          {visibleStocks.map((stock, index) => {
             const score = sumScore(stock.serenity);
             return (
               <div
@@ -400,6 +347,18 @@ function StockScoreSummaryPanel({ summary }: { summary: StockScoreSummary }) {
           })}
         </div>
       </div>
+
+      {sorted.length > 10 && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowAll((value) => !value)}
+            className="rounded-md border border-border/70 bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            {showAll ? "收起至前 10 名" : `查看全部 ${sorted.length} 支`}
+          </button>
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -428,6 +387,27 @@ function ModuleResearchSummaryPanel({ summary }: { summary: ModuleResearchSummar
             <div className="space-y-3">
               <p className="text-xs leading-5 text-muted-foreground"><b className="text-foreground">环节定位：</b>{item.positioning}</p>
               <p className="text-xs leading-5 text-muted-foreground"><b className="text-foreground">竞争格局：</b>{item.competition}</p>
+              {item.bottleneck && (
+                <p className="rounded bg-primary/5 p-2.5 text-xs leading-5 text-muted-foreground"><b className="text-primary">最窄卡口：</b>{item.bottleneck}</p>
+              )}
+              {(item.globalLeaders?.length || item.chinaLeaders?.length) && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-muted-foreground">海外/全球代表</p>
+                    <ChipList items={item.globalLeaders} />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-muted-foreground">中国映射</p>
+                    <ChipList items={item.chinaLeaders} tone="target" />
+                  </div>
+                </div>
+              )}
+              {item.trackingSignals?.length && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">跟踪信号</p>
+                  <ChipList items={item.trackingSignals} />
+                </div>
+              )}
               <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">评分维度重点</p>
                 <ChipList items={item.scoringFocus} tone="target" />
@@ -436,6 +416,100 @@ function ModuleResearchSummaryPanel({ summary }: { summary: ModuleResearchSummar
           </div>
         ))}
       </div>
+    </GlassCard>
+  );
+}
+
+function SectorSnapshotPanel({ snapshot }: { snapshot: SectorSnapshot }) {
+  return (
+    <GlassCard className="space-y-4 border-primary/25 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-4xl">
+          <p className="text-xs font-semibold text-primary">一页判断 · {snapshot.asOf}</p>
+          <h2 className="mt-1 text-xl font-extrabold">先看结论，再看证据</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{snapshot.thesis}</p>
+        </div>
+        <Activity className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
+          <p className="text-xs font-semibold text-muted-foreground">产业阶段</p>
+          <p className="mt-2 text-sm leading-6">{snapshot.stage}</p>
+        </div>
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+          <p className="text-xs font-semibold text-primary">最硬卡口</p>
+          <p className="mt-2 text-sm leading-6">{snapshot.hardestBottleneck}</p>
+        </div>
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
+          <p className="text-xs font-semibold text-muted-foreground">中国位置</p>
+          <p className="mt-2 text-sm leading-6">{snapshot.chinaPosition}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <RadioTower className="h-3.5 w-3.5 text-primary" /> 未来 6-12 个月催化
+          </p>
+          <ChipList items={snapshot.catalysts} tone="target" />
+        </div>
+        <div>
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" /> 核心风险
+          </p>
+          <ChipList items={snapshot.risks} />
+        </div>
+      </div>
+
+      <p className="border-t border-border/60 pt-3 text-xs leading-5 text-muted-foreground">{snapshot.evidenceNote}</p>
+    </GlassCard>
+  );
+}
+
+function GenericResearchPagePanel({ page }: { page: ResearchPage }) {
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-primary">专题研究</p>
+          <h2 className="mt-1 text-xl font-extrabold">{page.label}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">{page.summary}</p>
+        </div>
+        <BookOpen className="h-6 w-6 text-primary" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {page.sections.map((section) => (
+          <div key={section.title} className="rounded-lg border border-border/70 bg-muted/20 p-4">
+            <h3 className="mb-3 text-sm font-bold">{section.title}</h3>
+            <div className="space-y-2">
+              {section.bullets.map((bullet) => (
+                <p key={bullet} className="text-sm leading-6 text-muted-foreground">{bullet}</p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!!page.sources?.length && (
+        <div className="border-t border-border/60 pt-3">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">公开资料</p>
+          <div className="flex flex-wrap gap-2">
+            {page.sources.map((source) => (
+              <a
+                key={source.url}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground hover:text-primary"
+              >
+                {source.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -804,6 +878,66 @@ function CpoRoutePanel({ route }: { route: CpoRoute }) {
   );
 }
 
+type ResearchWorkspaceProps = {
+  sectorKey: string;
+  tags: ResearchTag[];
+  pages: ResearchPage[];
+  overview?: ResearchOverview;
+  techChain?: TechChain;
+  leaderLandscape?: LeaderLandscape;
+  cpoRoute?: CpoRoute;
+};
+
+function ResearchWorkspace({ sectorKey, tags, pages, overview, techChain, leaderLandscape, cpoRoute }: ResearchWorkspaceProps) {
+  const availableTabs = tags.length
+    ? tags
+    : pages.map((page) => ({ key: page.key, label: page.label, status: "done" }));
+  const [activeKey, setActiveKey] = useState(availableTabs[0]?.key || "");
+
+  useEffect(() => {
+    setActiveKey(availableTabs[0]?.key || "");
+  }, [sectorKey]);
+
+  if (!availableTabs.length) return null;
+
+  const activePage = pages.find((page) => page.key === activeKey);
+  const renderSpecializedPage = () => {
+    if (activeKey === "overview" && overview) return <OverviewPanel overview={overview} />;
+    if (activeKey === "tech-chain" && techChain) return <TechChainPanel techChain={techChain} />;
+    if (activeKey === "leaders" && leaderLandscape) return <LeaderLandscapePanel landscape={leaderLandscape} />;
+    if (activeKey === "cp0-route" && cpoRoute) return <CpoRoutePanel route={cpoRoute} />;
+    return activePage ? <GenericResearchPagePanel page={activePage} /> : null;
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <Tags className="h-5 w-5 text-primary" /> 研究栏目
+        </h2>
+        <p className="text-xs text-muted-foreground">同一时间只展开一个专题，减少重复信息</p>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {availableTabs.map((tag) => (
+          <button
+            key={tag.key}
+            type="button"
+            onClick={() => setActiveKey(tag.key)}
+            className={
+              activeKey === tag.key
+                ? "shrink-0 rounded-md border border-primary/40 bg-primary/15 px-3.5 py-2 text-sm font-semibold text-primary"
+                : "shrink-0 rounded-md border border-border/70 bg-muted/25 px-3.5 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            }
+          >
+            {tag.label}
+          </button>
+        ))}
+      </div>
+      {renderSpecializedPage()}
+    </section>
+  );
+}
+
 
 
 export function SectorDetail() {
@@ -820,9 +954,10 @@ export function SectorDetail() {
 
   const subSectors = ((sector as unknown as { subSectors?: SubSector[] }).subSectors || []);
   const researchTags = ((sector as unknown as { tags?: ResearchTag[] }).tags || []);
-  const bottleneckLeaderSummary = ((sector as unknown as { bottleneckLeaderSummary?: BottleneckLeaderSummary }).bottleneckLeaderSummary);
   const stockScoreSummary = ((sector as unknown as { stockScoreSummary?: StockScoreSummary }).stockScoreSummary);
   const moduleResearchSummary = ((sector as unknown as { moduleResearchSummary?: ModuleResearchSummary }).moduleResearchSummary);
+  const sectorSnapshot = ((sector as unknown as { sectorSnapshot?: SectorSnapshot }).sectorSnapshot);
+  const researchPages = ((sector as unknown as { researchPages?: ResearchPage[] }).researchPages || []);
   const overview = ((sector as unknown as { overview?: ResearchOverview }).overview);
   const techChain = ((sector as unknown as { techChain?: TechChain }).techChain);
   const leaderLandscape = ((sector as unknown as { leaderLandscape?: LeaderLandscape }).leaderLandscape);
@@ -866,44 +1001,23 @@ export function SectorDetail() {
             </p>
           </div>
 
+          {sectorSnapshot && <SectorSnapshotPanel snapshot={sectorSnapshot} />}
+
           {moduleResearchSummary && <ModuleResearchSummaryPanel summary={moduleResearchSummary} />}
 
           {stockScoreSummary && <StockScoreSummaryPanel summary={stockScoreSummary} />}
 
-          {bottleneckLeaderSummary && <BottleneckLeaderSummaryPanel summary={bottleneckLeaderSummary} />}
+          <ResearchWorkspace
+            sectorKey={sector.key}
+            tags={researchTags}
+            pages={researchPages}
+            overview={overview}
+            techChain={techChain}
+            leaderLandscape={leaderLandscape}
+            cpoRoute={cpoRoute}
+          />
 
-          {researchTags.length > 0 && (
-            <div>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
-                <Tags className="h-5 w-5 text-primary" /> 研究栏目
-              </h2>
-              <div className="grid gap-3 md:grid-cols-2">
-                {researchTags.map((tag) => (
-                  <GlassCard key={tag.key} className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-bold">{tag.label}</h3>
-                      <span className="rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-                        {tag.status === "empty" ? "空栏目" : tag.status || "整理中"}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {tag.description || "等待下一步指令填充内容页。"}
-                    </p>
-                  </GlassCard>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {overview && <OverviewPanel overview={overview} />}
-
-          {techChain && <TechChainPanel techChain={techChain} />}
-
-          {leaderLandscape && <LeaderLandscapePanel landscape={leaderLandscape} />}
-
-          {cpoRoute && <CpoRoutePanel route={cpoRoute} />}
-
-          {subSectors.length > 0 && (
+          {!moduleResearchSummary && subSectors.length > 0 && (
             <div>
               <h2 className="mb-3 text-lg font-bold">细分卡口</h2>
               <div className="grid gap-4">

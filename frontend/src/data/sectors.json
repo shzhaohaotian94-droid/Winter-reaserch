@@ -4078,8 +4078,15 @@
       "label": "商业航天",
       "tagline": "火箭、卫星制造与卫星互联网",
       "hot": true,
-      "verified": false,
-      "nodes": [],
+      "verified": true,
+      "nodes": [
+        "火箭发动机/可复用",
+        "卫星批量制造",
+        "相控阵载荷",
+        "星间星地通信",
+        "地面终端",
+        "星座运营"
+      ],
       "moduleResearchSummary": {
         "title": "商业航天环节研究：定位、壁垒、格局与评分重点",
         "asOf": "2026-07-08",
@@ -4226,8 +4233,15 @@
       "label": "生物医药",
       "tagline": "创新药、AI 制药与生物技术",
       "hot": true,
-      "verified": false,
-      "nodes": [],
+      "verified": true,
+      "nodes": [
+        "靶点发现/AI制药",
+        "小分子/分子生成",
+        "ADC/双抗",
+        "临床开发",
+        "CRO/CDMO",
+        "真实世界数据"
+      ],
       "moduleResearchSummary": {
         "title": "生物医药环节研究：定位、壁垒、格局与评分重点",
         "asOf": "2026-07-08",
