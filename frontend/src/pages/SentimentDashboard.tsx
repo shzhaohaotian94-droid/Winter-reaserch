@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity, AlertCircle, ArrowDown, ArrowUp, BarChart3, ExternalLink, Gauge,
-  Layers3, Loader2, MessageSquareText, RadioTower, RefreshCw, Thermometer,
+  CheckCircle2, Layers3, Loader2, MessageSquareText, Minus, RadioTower, RefreshCw,
+  ThumbsDown, ThumbsUp, Users, XCircle,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -23,6 +24,71 @@ const scoreColor = (value: number | null) => {
 };
 const fmt = (value: number | null | undefined, digits = 1) => value == null ? "—" : value.toFixed(digits);
 const rate = (value: number | null | undefined) => value == null ? "—" : `${(value * 100).toFixed(1)}%`;
+const VOTER_KEY = "winter-sentiment-voter";
+let temporaryVoterToken = "";
+
+function voterToken() {
+  try {
+    const stored = localStorage.getItem(VOTER_KEY);
+    if (stored) return stored;
+    const token = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}-${Math.random()}`;
+    localStorage.setItem(VOTER_KEY, token);
+    return token;
+  } catch {
+    temporaryVoterToken ||= crypto.randomUUID?.() || `${Date.now()}-${Math.random()}-${Math.random()}`;
+    return temporaryVoterToken;
+  }
+}
+
+function SentimentCompass({ pulse }: { pulse: SentimentDashboardData["pulse"] | undefined }) {
+  const score = pulse?.score;
+  const activeIndex = score == null ? -1 : Math.min(9, Math.floor(score / 10));
+  const needle = score == null ? -90 : -90 + Math.max(0, Math.min(100, score)) * 1.8;
+  return (
+    <div>
+      <div className="relative mx-auto h-[185px] w-full max-w-[350px] overflow-hidden" aria-label={`情绪罗盘 ${score ?? "数据不足"}分`}>
+        {(pulse?.bands || []).map((band, index) => (
+          <div
+            key={band.min}
+            className="absolute bottom-5 left-1/2 h-[135px] w-6 origin-[50%_100%] -translate-x-1/2"
+            style={{ transform: `translateX(-50%) rotate(${-81 + index * 18}deg)` }}
+          >
+            <div
+              className={cn("h-12 w-full rounded-sm border border-white/10 transition-all", activeIndex === index ? "opacity-100 shadow-[0_0_14px_currentColor]" : "opacity-55")}
+              style={{ backgroundColor: band.color, color: band.color }}
+              title={`${band.min}-${band.max} ${band.label}`}
+            />
+          </div>
+        ))}
+        <div
+          className="absolute bottom-5 left-1/2 h-[108px] w-1 origin-[50%_100%] -translate-x-1/2 rounded-full bg-foreground shadow-lg transition-transform duration-700"
+          style={{ transform: `translateX(-50%) rotate(${needle}deg)` }}
+        >
+          <div className="absolute -top-1 -left-1 h-3 w-3 rotate-45 border-l border-t border-foreground bg-foreground" />
+        </div>
+        <div className="absolute bottom-3 left-1/2 h-5 w-5 -translate-x-1/2 rounded-full border-4 border-background bg-foreground" />
+        <span className="absolute bottom-0 left-2 font-mono text-[11px] text-success">0 冰点</span>
+        <span className="absolute bottom-0 right-2 font-mono text-[11px] text-danger">100 亢奋</span>
+        <div className="absolute bottom-7 left-1/2 -translate-x-1/2 text-center">
+          <p className={cn("font-mono text-4xl font-black", scoreColor(score ?? null))}>{fmt(score)}</p>
+          <p className="text-xs font-bold">{pulse?.phase || "数据不足"}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-10 gap-1" aria-label="十档情绪信号灯">
+        {(pulse?.bands || []).map((band, index) => (
+          <div key={band.min} className="min-w-0 text-center">
+            <div
+              className={cn("h-3 border border-white/10", activeIndex === index && "ring-2 ring-foreground ring-offset-2 ring-offset-background")}
+              style={{ backgroundColor: band.color }}
+              title={`${band.min}-${band.max} ${band.label}`}
+            />
+            <span className="mt-1 block truncate font-mono text-[9px] text-muted-foreground">{band.min}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ComponentMeter({ item }: { item: SentimentComponent }) {
   const width = item.value == null ? 0 : Math.max(0, Math.min(100, item.value));
@@ -70,6 +136,7 @@ export function SentimentDashboard() {
   const [data, setData] = useState<SentimentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingOpinions, setRefreshingOpinions] = useState(false);
+  const [voting, setVoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<OpinionFilter>("全部");
 
@@ -99,6 +166,19 @@ export function SentimentDashboard() {
       setError(err instanceof ApiError ? err.message : "观点源刷新失败");
     } finally {
       setRefreshingOpinions(false);
+    }
+  };
+
+  const submitVote = async (choice: "bull" | "neutral" | "bear") => {
+    setVoting(true);
+    setError(null);
+    try {
+      await api.sentimentVote(choice, voterToken());
+      setData(await api.sentimentDashboard());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "情绪投票提交失败");
+    } finally {
+      setVoting(false);
     }
   };
 
@@ -157,18 +237,12 @@ export function SentimentDashboard() {
             涨跌停统计交易日：{emotion?.date || "—"} · 页面汇总时间：{data?.as_of || "—"}
           </p>
 
-          <section className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <section className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
             <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-primary"><Thermometer className="h-4 w-4" /> 综合情绪温度</p>
-                  <p className={cn("mt-2 font-mono text-5xl font-black", scoreColor(pulse?.score ?? null))}>{fmt(pulse?.score)}</p>
-                  <p className="mt-1 text-lg font-bold">{pulse?.phase || "数据不足"}</p>
-                </div>
-                <Gauge className="h-7 w-7 text-primary" />
-              </div>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">{pulse?.signal}</p>
-              <div className="mt-4 rounded-md bg-muted/30 p-3">
+              <p className="text-center text-xs font-semibold text-primary">0-100 市场情绪罗盘</p>
+              <SentimentCompass pulse={pulse} />
+              <p className="mt-3 text-center text-sm leading-6 text-muted-foreground">{pulse?.signal}</p>
+              <div className="mt-3 rounded-md bg-muted/30 p-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">结构分化</span>
                   <span className="font-semibold">{pulse?.divergence_text} · {fmt(pulse?.divergence)}</span>
@@ -183,11 +257,57 @@ export function SentimentDashboard() {
 
             <GlassCard className="p-5">
               <div className="mb-1 flex items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2 text-base font-bold"><BarChart3 className="h-4 w-4 text-primary" /> 六维情绪拆解</h2>
+                <h2 className="flex items-center gap-2 text-base font-bold"><BarChart3 className="h-4 w-4 text-primary" /> 九维情绪拆解</h2>
                 <span className="text-[11px] text-muted-foreground">有效分项自动重分配权重</span>
               </div>
               <div className="grid gap-x-6 md:grid-cols-2">
                 {(pulse?.components || []).map((item) => <ComponentMeter key={item.key} item={item} />)}
+              </div>
+            </GlassCard>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <GlassCard className="p-5">
+              <h2 className="flex items-center gap-2 text-base font-bold"><Users className="h-4 w-4 text-primary" /> 今日散户情绪投票</h2>
+              <p className="mt-1 text-xs text-muted-foreground">你认为下一交易日市场整体情绪会怎样？同一浏览器可修改选择。</p>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {[
+                  { key: "bull" as const, label: "偏多", icon: ThumbsUp, tone: "text-danger" },
+                  { key: "neutral" as const, label: "震荡", icon: Minus, tone: "text-amber-400" },
+                  { key: "bear" as const, label: "偏空", icon: ThumbsDown, tone: "text-success" },
+                ].map(({ key, label, icon: Icon, tone }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={voting}
+                    onClick={() => submitVote(key)}
+                    className="flex min-h-20 flex-col items-center justify-center gap-1 rounded-md border border-border bg-muted/20 text-sm hover:border-primary/50 hover:bg-muted/40 disabled:opacity-50"
+                  >
+                    <Icon className={cn("h-5 w-5", tone)} />
+                    <span className="font-semibold">{label}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{data?.votes?.counts?.[key] || 0} 票</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+                <span className="text-muted-foreground">当前样本 {data?.votes?.total || 0} / {data?.votes?.minimum_sample || 20}</span>
+                <span className={cn("font-semibold", data?.votes?.sample_ready ? "text-primary" : "text-muted-foreground")}>
+                  {data?.votes?.sample_ready ? `已纳入总分 · ${fmt(data?.votes?.score)}` : "达到门槛后纳入总分"}
+                </span>
+              </div>
+            </GlassCard>
+
+            <GlassCard className="p-5">
+              <h2 className="flex items-center gap-2 text-base font-bold"><Gauge className="h-4 w-4 text-primary" /> 信号覆盖</h2>
+              <p className="mt-1 text-xs text-muted-foreground">只把当前有可靠数据的信号计入罗盘，缺失项自动重分配权重。</p>
+              <div className="mt-4 space-y-3">
+                {(pulse?.coverage || []).map((item) => (
+                  <div key={item.key} className="grid grid-cols-[20px_90px_1fr] items-start gap-2 text-xs">
+                    {item.active ? <CheckCircle2 className="h-4 w-4 text-success" /> : <XCircle className="h-4 w-4 text-muted-foreground" />}
+                    <span className="font-semibold">{item.label}</span>
+                    <span className="text-muted-foreground">{item.note}</span>
+                  </div>
+                ))}
               </div>
             </GlassCard>
           </section>

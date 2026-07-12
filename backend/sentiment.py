@@ -8,12 +8,31 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from html import unescape
+from pathlib import Path
+from threading import Lock
 
+import hashlib
+import json
 import astock
 import market
 import newsradar
 
 BEIJING = timezone(timedelta(hours=8))
+VOTE_FILE = Path(__file__).parent / ".cache" / "sentiment_votes.json"
+VOTE_LOCK = Lock()
+
+SENTIMENT_BANDS = [
+    {"min": 0, "max": 9, "label": "极度冰点", "color": "#064e3b", "meaning": "全网悲观，风险偏好极低"},
+    {"min": 10, "max": 19, "label": "冰点", "color": "#047857", "meaning": "恐慌占优，等待止跌信号"},
+    {"min": 20, "max": 29, "label": "极弱", "color": "#0f9f75", "meaning": "亏钱效应明显，承接偏弱"},
+    {"min": 30, "max": 39, "label": "偏冷", "color": "#22a06b", "meaning": "情绪降温，追高胜率较低"},
+    {"min": 40, "max": 49, "label": "谨慎", "color": "#64748b", "meaning": "多空拉锯，结构分化"},
+    {"min": 50, "max": 59, "label": "平衡", "color": "#d4a72c", "meaning": "风险偏好中性，等待方向"},
+    {"min": 60, "max": 69, "label": "回暖", "color": "#f59e0b", "meaning": "赚钱效应开始扩散"},
+    {"min": 70, "max": 79, "label": "活跃", "color": "#f97316", "meaning": "做多热度较高，题材活跃"},
+    {"min": 80, "max": 89, "label": "高热", "color": "#ef4444", "meaning": "情绪高涨，同时警惕拥挤"},
+    {"min": 90, "max": 100, "label": "极度亢奋", "color": "#b91c1c", "meaning": "全网看涨热情高涨，注意兑现"},
+]
 
 # 这些来源来自 integrations/investment-news/sources.json，优先保留研究者专栏、
 # 专业评论和宏观市场栏目。它们是“公开观点源”，不是平台私域账号抓取。
@@ -60,7 +79,56 @@ def _component(key: str, label: str, value, weight: float, note: str) -> dict:
     return {"key": key, "label": label, "value": value, "weight": weight, "note": note}
 
 
-def calculate_pulse(indices: list[dict], overview: dict, emotion: dict) -> dict:
+def _score_band(score: float | None) -> dict | None:
+    if score is None:
+        return None
+    return next((band for band in SENTIMENT_BANDS if band["min"] <= score <= band["max"] + 0.9), SENTIMENT_BANDS[-1])
+
+
+def _read_votes() -> dict:
+    try:
+        data = json.loads(VOTE_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def vote_snapshot() -> dict:
+    with VOTE_LOCK:
+        votes = _read_votes()
+    counts = {choice: sum(1 for value in votes.values() if value == choice) for choice in ("bull", "neutral", "bear")}
+    total = sum(counts.values())
+    score = round((counts["bull"] * 100 + counts["neutral"] * 50) / total, 1) if total else None
+    return {
+        "counts": counts,
+        "total": total,
+        "score": score,
+        "sample_ready": total >= 20,
+        "minimum_sample": 20,
+        "method": "匿名浏览器投票；同一浏览器可更新选择，满20份样本后纳入综合分",
+    }
+
+
+def record_vote(choice: str, voter_token: str) -> dict:
+    if choice not in {"bull", "neutral", "bear"}:
+        raise ValueError("无效投票选项")
+    token = (voter_token or "").strip()
+    if not 16 <= len(token) <= 128:
+        raise ValueError("无效投票标识")
+    voter_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    with VOTE_LOCK:
+        votes = _read_votes()
+        votes[voter_hash] = choice
+        VOTE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        temp_file = VOTE_FILE.with_suffix(".tmp")
+        temp_file.write_text(json.dumps(votes, ensure_ascii=False, indent=2), encoding="utf-8")
+        temp_file.replace(VOTE_FILE)
+    return vote_snapshot()
+
+
+def calculate_pulse(
+    indices: list[dict], overview: dict, emotion: dict, opinions: dict | None = None, votes: dict | None = None,
+) -> dict:
     """合成 0-100 情绪温度，并完整返回每个分项和计算口径。"""
     sent = (overview or {}).get("sentiment") or {}
     up = int(sent.get("up") or 0)
@@ -85,30 +153,37 @@ def calculate_pulse(indices: list[dict], overview: dict, emotion: dict) -> dict:
     avg_change = round(sum(changes) / len(changes), 2) if changes else None
     index_score = round(_clamp(50 + avg_change * 16), 1) if avg_change is not None else None
 
+    sectors = (overview or {}).get("sectors") or []
+    positive_flow = sum(max(float(row.get("net") or 0), 0) for row in sectors)
+    negative_flow = sum(abs(min(float(row.get("net") or 0), 0)) for row in sectors)
+    flow_total = positive_flow + negative_flow
+    fund_score = round(positive_flow / flow_total * 100, 1) if flow_total else None
+
+    opinions = opinions or {}
+    opinion_counts = opinions.get("counts") or {}
+    directional_opinions = int(opinion_counts.get("偏多") or 0) + int(opinion_counts.get("偏空") or 0)
+    opinion_score = round(_clamp(50 + float(opinions.get("consensus") or 0) / 2), 1) if directional_opinions >= 3 else None
+    votes = votes or {}
+    vote_score = votes.get("score") if votes.get("sample_ready") else None
+
     components = [
-        _component("breadth", "市场广度", breadth, 0.30, "上涨家数占全部涨跌平家数的比例"),
-        _component("limit", "涨跌停强弱", limit_strength, 0.20, "涨停与跌停家数的相对强弱"),
-        _component("seal", "封板质量", seal_score, 0.15, "封板数占涨停尝试总数的比例"),
-        _component("promotion", "连板晋级", promotion_score, 0.15, "今日连板数占昨日涨停数的比例"),
+        _component("breadth", "市场广度", breadth, 0.20, "上涨家数占全部涨跌平家数的比例"),
+        _component("limit", "涨跌停强弱", limit_strength, 0.15, "涨停与跌停家数的相对强弱"),
+        _component("seal", "封板质量", seal_score, 0.10, "封板数占涨停尝试总数的比例"),
+        _component("promotion", "连板晋级", promotion_score, 0.10, "今日连板数占昨日涨停数的比例"),
         _component("height", "空间高度", height_score, 0.10, "最高连板按 8 板映射到 100 分并封顶"),
         _component("index", "指数动能", index_score, 0.10, "主要指数平均涨跌幅映射到 0-100"),
+        _component("fund", "主力资金", fund_score, 0.10, "行业主力净流入占流入与流出绝对额之和"),
+        _component("opinion", "公开观点", opinion_score, 0.10, "专业公开观点源标题的偏多/偏空机械分类"),
+        _component("retail", "散户投票", vote_score, 0.05, "匿名投票满20份样本后纳入，未达门槛不计分"),
     ]
     valid = [c for c in components if c["value"] is not None]
     weight_sum = sum(c["weight"] for c in valid)
     score = round(sum(c["value"] * c["weight"] for c in valid) / weight_sum, 1) if weight_sum else None
 
-    if score is None:
-        phase, signal = "数据不足", "等待有效行情数据"
-    elif score >= 80:
-        phase, signal = "亢奋", "强势与拥挤并存，重点观察炸板和高位兑现"
-    elif score >= 65:
-        phase, signal = "升温", "赚钱效应扩散，仍需确认指数和广度是否同向"
-    elif score >= 45:
-        phase, signal = "中性", "多空均衡，优先观察结构分化"
-    elif score >= 30:
-        phase, signal = "降温", "赚钱效应收缩，控制追高频率"
-    else:
-        phase, signal = "冰点", "极弱环境，等待广度和封板率修复"
+    band = _score_band(score)
+    phase = band["label"] if band else "数据不足"
+    signal = band["meaning"] if band else "等待有效行情数据"
 
     divergence = round(abs((breadth or 50) - (index_score or 50)), 1) if breadth is not None and index_score is not None else None
     divergence_text = "—"
@@ -126,13 +201,22 @@ def calculate_pulse(indices: list[dict], overview: dict, emotion: dict) -> dict:
         "score": score,
         "phase": phase,
         "signal": signal,
+        "band": band,
+        "bands": SENTIMENT_BANDS,
         "components": components,
         "breadth_score": breadth,
         "index_score": index_score,
         "index_avg_change": avg_change,
         "divergence": divergence,
         "divergence_text": divergence_text,
-        "formula": "有效分项加权：广度30% + 涨跌停20% + 封板15% + 晋级15% + 高度10% + 指数10%",
+        "coverage": [
+            {"key": "market", "label": "盘面行情", "active": any(c["value"] is not None for c in components[:6]), "note": "指数、市场广度与短线梯队"},
+            {"key": "fund", "label": "主力资金", "active": fund_score is not None, "note": "行业资金净流入/流出"},
+            {"key": "opinion", "label": "公开观点", "active": opinion_score is not None, "note": f"{directional_opinions} 条方向性样本"},
+            {"key": "retail", "label": "散户投票", "active": vote_score is not None, "note": f"{votes.get('total', 0)} / 20 份"},
+            {"key": "comments", "label": "评论区情绪", "active": False, "note": "暂无合规稳定的公开评论接口，未纳入"},
+        ],
+        "formula": "有效分项加权：广度20% + 涨跌停15% + 封板10% + 晋级10% + 高度10% + 指数10% + 主力资金10% + 公开观点10% + 散户投票5%",
     }
 
 
@@ -205,13 +289,15 @@ def get_dashboard() -> dict:
     except Exception:
         emotion = {}
     opinions = opinion_feed()
+    votes = vote_snapshot()
     return {
         "as_of": datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S"),
         "indices": indices,
         "overview": overview,
         "emotion": emotion,
-        "pulse": calculate_pulse(indices, overview, emotion),
+        "pulse": calculate_pulse(indices, overview, emotion, opinions, votes),
         "opinions": opinions,
+        "votes": votes,
         "sources": {
             "market": "AkShare 乐咕市场活跃度 + 东方财富涨跌停池/行业资金流 + 指数行情",
             "opinions": "investment-news 公开 RSS 缓存中的专业研究与市场评论源",

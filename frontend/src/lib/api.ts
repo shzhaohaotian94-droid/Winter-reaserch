@@ -221,10 +221,21 @@ export interface GlobalStock {
 export interface SentimentComponent {
   key: string; label: string; value: number | null; weight: number; note: string;
 }
+export interface SentimentBand {
+  min: number; max: number; label: string; color: string; meaning: string;
+}
+export interface SentimentCoverage {
+  key: string; label: string; active: boolean; note: string;
+}
 export interface SentimentPulse {
   score: number | null; phase: string; signal: string; components: SentimentComponent[];
+  band: SentimentBand | null; bands: SentimentBand[]; coverage: SentimentCoverage[];
   breadth_score: number | null; index_score: number | null; index_avg_change: number | null;
   divergence: number | null; divergence_text: string; formula: string;
+}
+export interface SentimentVotes {
+  counts: Record<"bull" | "neutral" | "bear", number>;
+  total: number; score: number | null; sample_ready: boolean; minimum_sample: number; method: string;
 }
 export interface OpinionItem {
   title: string; url: string; time: string; source: string; summary: string; industry: string;
@@ -237,7 +248,7 @@ export interface OpinionFeed {
 }
 export interface SentimentDashboardData {
   as_of: string; indices: IndexQuote[]; overview: MarketOverview; emotion: ShortTermEmotion;
-  pulse: SentimentPulse; opinions: OpinionFeed;
+  pulse: SentimentPulse; opinions: OpinionFeed; votes: SentimentVotes;
   sources: { market: string; opinions: string; cache: string };
 }
 
@@ -269,6 +280,8 @@ export const api = {
   radarRefresh: () => request<RadarData>("/radar/refresh", "POST"),
   sentimentDashboard: () => get<SentimentDashboardData>("/sentiment/dashboard"),
   sentimentRefreshOpinions: () => request<SentimentDashboardData>("/sentiment/refresh-opinions", "POST"),
+  sentimentVote: (choice: "bull" | "neutral" | "bear", voterToken: string) =>
+    request<SentimentVotes>("/sentiment/vote", "POST", { choice, voter_token: voterToken }),
   portfolio: () => get<PortfolioData>("/portfolio"),
   addHolding: (code: string, shares: number, cost: number) => request<PortfolioData>("/portfolio/holding", "POST", { code, shares, cost }),
   removeHolding: (code: string) => request<PortfolioData>(`/portfolio/holding?code=${code}`, "DELETE"),

@@ -52,9 +52,11 @@ _PUBLIC_READONLY = os.environ.get("VR_PUBLIC_READONLY", "").strip().lower() in {
 
 @app.middleware("http")
 async def _require_api_key(request: Request, call_next):
+    public_write_paths = {"/api/sentiment/vote"}
     if (
         _PUBLIC_READONLY
         and request.url.path.startswith("/api/")
+        and request.url.path not in public_write_paths
         and (request.method not in {"GET", "OPTIONS"} or request.url.path == "/api/chat")
     ):
         return JSONResponse({"detail": "公开只读模式：该操作不可用"}, status_code=403)
@@ -62,7 +64,7 @@ async def _require_api_key(request: Request, call_next):
         _API_KEY
         and request.method != "OPTIONS"
         and request.url.path.startswith("/api/")
-        and request.url.path != "/api/health"
+        and request.url.path not in public_write_paths | {"/api/health"}
     ):
         if request.headers.get("authorization", "") != f"Bearer {_API_KEY}":
             return JSONResponse({"detail": "未授权：缺少或错误的 API Key（VR_API_KEY）"}, status_code=401)
@@ -221,6 +223,20 @@ def sentiment_dashboard():
         return {"data": sentiment.get_dashboard()}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"情绪看板异常：{e}") from e
+
+
+class SentimentVoteIn(BaseModel):
+    choice: str
+    voter_token: str
+
+
+@app.post("/api/sentiment/vote")
+def sentiment_vote(payload: SentimentVoteIn):
+    """匿名情绪投票；仅保存浏览器标识的哈希，同一浏览器可更新投票。"""
+    try:
+        return {"data": sentiment.record_vote(payload.choice, payload.voter_token)}
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
 
 
 @app.post("/api/sentiment/refresh-opinions")
