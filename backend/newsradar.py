@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -28,6 +30,7 @@ CACHE_FILE = os.path.join(CACHE_DIR, "radar.json")
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 BEIJING = timezone(timedelta(hours=8))
+_SCHEDULER_STARTED = False
 
 
 def _strip_html(s: str) -> str:
@@ -171,3 +174,22 @@ def get_radar(force: bool = False) -> dict:
     if force:
         return fetch_radar()
     return load_cache() or skeleton()
+
+
+def start_scheduler(interval: int = 1800) -> None:
+    """后台更新公开 RSS 缓存；首次启动延迟 5 秒，避免阻塞 API 启动。"""
+    global _SCHEDULER_STARTED
+    if _SCHEDULER_STARTED:
+        return
+    _SCHEDULER_STARTED = True
+
+    def loop():
+        time.sleep(5)
+        while True:
+            try:
+                fetch_radar()
+            except Exception:
+                pass
+            time.sleep(max(300, interval))
+
+    threading.Thread(target=loop, name="news-radar-refresh", daemon=True).start()

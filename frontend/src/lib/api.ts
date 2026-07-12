@@ -218,6 +218,29 @@ export interface GlobalStock {
   quote: GlobalQuote; metrics: GlobalMetrics | null;
 }
 
+export interface SentimentComponent {
+  key: string; label: string; value: number | null; weight: number; note: string;
+}
+export interface SentimentPulse {
+  score: number | null; phase: string; signal: string; components: SentimentComponent[];
+  breadth_score: number | null; index_score: number | null; index_avg_change: number | null;
+  divergence: number | null; divergence_text: string; formula: string;
+}
+export interface OpinionItem {
+  title: string; url: string; time: string; source: string; summary: string; industry: string;
+  stance: "偏多" | "中性" | "偏空"; confidence: number;
+}
+export interface OpinionFeed {
+  generated_at: string | null; items: OpinionItem[];
+  counts: Record<"偏多" | "中性" | "偏空", number>;
+  consensus: number; source_count: number; method: string;
+}
+export interface SentimentDashboardData {
+  as_of: string; indices: IndexQuote[]; overview: MarketOverview; emotion: ShortTermEmotion;
+  pulse: SentimentPulse; opinions: OpinionFeed;
+  sources: { market: string; opinions: string; cache: string };
+}
+
 export interface ResearchReport {
   title: string; date: string; segment: string; source: string;
   type?: string; org?: string; path?: string; pdfUrl?: string | null; size?: number;
@@ -244,6 +267,8 @@ export const api = {
   researchLibrary: () => get<ResearchLibrary>("/research/library"),
   radar: () => get<RadarData>("/radar"),
   radarRefresh: () => request<RadarData>("/radar/refresh", "POST"),
+  sentimentDashboard: () => get<SentimentDashboardData>("/sentiment/dashboard"),
+  sentimentRefreshOpinions: () => request<SentimentDashboardData>("/sentiment/refresh-opinions", "POST"),
   portfolio: () => get<PortfolioData>("/portfolio"),
   addHolding: (code: string, shares: number, cost: number) => request<PortfolioData>("/portfolio/holding", "POST", { code, shares, cost }),
   removeHolding: (code: string) => request<PortfolioData>(`/portfolio/holding?code=${code}`, "DELETE"),

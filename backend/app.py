@@ -25,11 +25,14 @@ import newsradar
 import portfolio as pf
 import market
 import research
+import sentiment
 
 app = FastAPI(title="Vibe-Research API", version="0.1.0")
 
 # 每半小时后台刷新持仓数据
 pf.start_scheduler(1800)
+# 每半小时刷新公开资讯/观点缓存；不依赖用户手动点击。
+newsradar.start_scheduler(1800)
 
 # CORS：默认放开（本地自托管友好）；公网部署时用 VR_ALLOW_ORIGINS 收紧成白名单。
 #   例：VR_ALLOW_ORIGINS="https://myhost"  （逗号分隔多个）
@@ -209,6 +212,25 @@ def radar_refresh():
         return {"data": newsradar.fetch_radar()}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"资讯雷达刷新失败：{e}") from e
+
+
+@app.get("/api/sentiment/dashboard")
+def sentiment_dashboard():
+    """综合情绪看板：真实行情分项 + 可解释总分 + 公开观点源。"""
+    try:
+        return {"data": sentiment.get_dashboard()}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"情绪看板异常：{e}") from e
+
+
+@app.post("/api/sentiment/refresh-opinions")
+def sentiment_refresh_opinions():
+    """重抓公开 RSS 后返回最新情绪看板；不抓登录态社交平台。"""
+    try:
+        newsradar.fetch_radar()
+        return {"data": sentiment.get_dashboard()}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"观点刷新失败：{e}") from e
 
 
 @app.get("/api/market/overview")

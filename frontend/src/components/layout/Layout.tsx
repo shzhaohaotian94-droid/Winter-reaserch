@@ -4,6 +4,7 @@ import {
   Activity, Radar, LayoutGrid, Wallet, Settings, Search, NotebookPen,
   Moon, Sun, ChevronsLeft, ChevronsRight, LineChart, Github, UserRound,
   Cog, Cpu, Database, Cable, Rocket, FlaskConical, Snowflake, FileText, Layers3,
+  Thermometer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -16,6 +17,7 @@ const NAV = [
   { to: "/winter", icon: Snowflake, label: "Winter 看板" },
   { to: "/research-library", icon: FileText, label: "研报与评分" },
   { to: "/daily-review", icon: Activity, label: "每日复盘" },
+  { to: "/sentiment", icon: Thermometer, label: "情绪看板" },
   { to: "/industry-news", icon: Radar, label: "行业资讯" },
   { to: "/sectors", icon: LayoutGrid, label: "板块中心" },
   { to: "/stock-data", icon: Search, label: "个股数据" },
