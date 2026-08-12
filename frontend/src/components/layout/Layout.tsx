@@ -4,7 +4,7 @@ import {
   Activity, Radar, LayoutGrid, Wallet, Settings, Search, NotebookPen,
   Moon, Sun, ChevronsLeft, ChevronsRight, LineChart, Github, UserRound,
   Cog, Cpu, Database, Cable, Rocket, FlaskConical, Snowflake, FileText, Layers3,
-  Thermometer,
+  Thermometer, CandlestickChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/research-library", icon: FileText, label: "研报与评分" },
   { to: "/daily-review", icon: Activity, label: "每日复盘" },
   { to: "/sentiment", icon: Thermometer, label: "情绪看板" },
+  { to: "/astock", icon: CandlestickChart, label: "短线复盘" },
   { to: "/industry-news", icon: Radar, label: "行业资讯" },
   { to: "/sectors", icon: LayoutGrid, label: "板块中心" },
   { to: "/stock-data", icon: Search, label: "个股数据" },
@@ -47,10 +48,19 @@ export function Layout() {
   }, [collapsed]);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen flex-col md:flex-row">
+      <nav className="glass z-20 flex shrink-0 gap-1 overflow-x-auto border-b border-border/50 p-2 md:hidden" aria-label="移动端主导航">
+        {NAV.map(({ to, icon: Icon, label }) => (
+          <Link key={to} to={to} title={label} aria-label={label}
+            className={cn("flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-3",
+              pathname === to ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
+            <Icon className="h-4 w-4" />
+          </Link>
+        ))}
+      </nav>
       {/* Sidebar */}
       <aside className={cn(
-        "glass z-10 m-2 flex shrink-0 flex-col rounded-2xl transition-all duration-200",
+        "glass z-10 m-2 hidden shrink-0 flex-col rounded-2xl transition-all duration-200 md:flex",
         collapsed ? "w-14" : "w-60",
       )}>
         {/* Brand */}

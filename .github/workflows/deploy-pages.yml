@@ -34,12 +34,21 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Install Vibe-Astock frontend
+        working-directory: integrations/vibe-astock/frontend
+        run: npm ci
+
       - name: Build
         env:
           VITE_BASE: /Winter-reaserch/
           VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npm run build
+          cd ../integrations/vibe-astock/frontend
+          VITE_API_URL="${{ vars.VITE_ASTOCK_API_URL }}" npm run build -- --base=/Winter-reaserch/astock/
+          mkdir -p ../../../frontend/dist/astock
+          cp -r dist/* ../../../frontend/dist/astock/
+          cd ../../../frontend
           cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact

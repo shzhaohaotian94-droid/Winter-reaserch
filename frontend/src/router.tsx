@@ -11,6 +11,7 @@ import { StockData } from "@/pages/StockData";
 import { Notes } from "@/pages/Notes";
 import { Settings } from "@/pages/Settings";
 import { SentimentDashboard } from "@/pages/SentimentDashboard";
+import { AstockWorkbench } from "@/pages/AstockWorkbench";
 
 export const router = createBrowserRouter(
   [
@@ -22,6 +23,7 @@ export const router = createBrowserRouter(
         { path: "/research-library", element: <ResearchLibrary /> },
         { path: "/daily-review", element: <DailyReview /> },
         { path: "/sentiment", element: <SentimentDashboard /> },
+        { path: "/astock", element: <AstockWorkbench /> },
         { path: "/industry-news", element: <Intel /> },
         { path: "/intel", element: <Navigate to="/industry-news" replace /> },
         { path: "/sectors", element: <Sectors /> },

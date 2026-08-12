@@ -45,6 +45,24 @@ _ALLOWED_HOSTS = {"127.0.0.1", "localhost"} | {
 }
 
 app = FastAPI(title="短线每日复盘")
+_CORS_ORIGINS = [o.strip() for o in os.environ.get("VIBE_CORS_ORIGINS", "*").split(",") if o.strip()] or ["*"]
+
+
+@app.middleware("http")
+async def _cors_headers(request: Request, call_next):
+    """Allow the separately hosted static dashboard to read this API."""
+    origin = request.headers.get("origin", "")
+    allowed = "*" in _CORS_ORIGINS or origin in _CORS_ORIGINS
+    if request.method == "OPTIONS" and allowed:
+        response = JSONResponse({}, status_code=204)
+    else:
+        response = await call_next(request)
+    if allowed:
+        response.headers["Access-Control-Allow-Origin"] = "*" if "*" in _CORS_ORIGINS else origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Vary"] = "Origin"
+    return response
 
 # ---------------------------------------------------------------- 并入 VR 后端
 # 盘面数据 / 首板分析 / 盯盘 / 持仓股 / 自选股 / 个股数据 / 资讯雷达 这几个分栏的

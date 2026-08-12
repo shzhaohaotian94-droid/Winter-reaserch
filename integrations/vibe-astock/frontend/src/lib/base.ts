@@ -9,6 +9,8 @@
  *  不带 `--base` 时它是 `/`，行为与从前完全一致。
  */
 export function apiUrl(path: string): string {
+  const configured = ((import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || "").trim();
+  if (configured) return `${configured.replace(/\/$/, "")}${path}`;
   const base = import.meta.env.BASE_URL || "/";
   return (base.endsWith("/") ? base.slice(0, -1) : base) + path;
 }

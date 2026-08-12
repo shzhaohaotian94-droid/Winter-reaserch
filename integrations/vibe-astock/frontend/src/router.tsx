@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createHashRouter, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { AgentReview } from "@/pages/AgentReview";
 import { DailyReview } from "@/pages/DailyReview";
@@ -7,7 +7,7 @@ import { AgentWeekly } from "@/pages/AgentWeekly";
 import { Settings } from "@/pages/Settings";
 
 // basename 跟着构建时的 --base 走，这样挂在子路径下内部跳转才不会掉回站点根目录
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     element: <Layout />,
     children: [
@@ -20,4 +20,4 @@ export const router = createBrowserRouter([
       { path: "*", element: <Navigate to="/agent/review" replace /> },
     ],
   },
-], { basename: import.meta.env.BASE_URL });
+]);

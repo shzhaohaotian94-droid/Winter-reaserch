@@ -12,3 +12,14 @@ services:
         value: /app/research
       - key: VR_ALLOW_ORIGINS
         value: "*"
+  - type: web
+    name: vibe-astock-api
+    env: docker
+    rootDir: integrations/vibe-astock
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: VIBE_ALLOW_HOSTS
+        value: shzhaohaotian94-droid.github.io
+      - key: VIBE_CORS_ORIGINS
+        value: https://shzhaohaotian94-droid.github.io

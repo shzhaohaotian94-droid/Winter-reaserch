@@ -36,6 +36,7 @@ const SETTINGS_NAV = [{ to: "/settings", icon: Cog, label: "接入 AI" }];
 export function Layout() {
   const { pathname } = useLocation();
   const { dark, toggle } = useDarkMode();
+  const embedded = new URLSearchParams(window.location.search).get("embed") === "1";
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("va-sidebar") === "collapsed");
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export function Layout() {
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <aside className={cn(
+      {!embedded && <aside className={cn(
         "glass z-10 m-2 flex shrink-0 flex-col rounded-2xl transition-all duration-200",
         collapsed ? "w-14" : "w-60",
       )}>
@@ -145,11 +146,11 @@ export function Layout() {
             </>
           )}
         </div>
-      </aside>
+      </aside>}
 
       {/* Main */}
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-6xl px-6 py-6">
+        <div className={cn("mx-auto max-w-6xl", embedded ? "px-4 py-4" : "px-6 py-6")}>
           <Outlet />
         </div>
       </main>
