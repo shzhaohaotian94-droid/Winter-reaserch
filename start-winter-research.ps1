@@ -70,6 +70,8 @@ if (-not (Test-HttpOk "http://127.0.0.1:8900/api/health")) {
 }
 
 if (-not (Test-HttpOk "http://127.0.0.1:8910/api/health")) {
+  $env:VIBE_LLM_CLI = "codex"
+  $env:VIBE_ALLOW_UNSAFE_CLI = "codex"
   Start-Process -FilePath $AstockPython `
     -ArgumentList @("server.py") `
     -WorkingDirectory $Astock `

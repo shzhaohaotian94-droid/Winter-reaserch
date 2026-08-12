@@ -1666,6 +1666,16 @@ def _live_cli_runtime():
     return live.cli_runtime
 
 
+def test_codex_cli_runs_read_only_and_ephemeral():
+    """The dashboard must not let a review call mutate the workspace or retain a session."""
+    from vr import cli_runtime
+
+    args = cli_runtime._CLI_DEFS["codex"]["build_args"](None)
+    assert args[:4] == ["exec", "--sandbox", "read-only", "--ephemeral"]
+    assert "--skip-git-repo-check" in args
+    assert args[-1] == "-"
+
+
 class TestBlockedCliRemovedFromRuntime:
     """第 7 轮 ：禁用必须在**服务端**生效，不是只在前端灰按钮"""
 
