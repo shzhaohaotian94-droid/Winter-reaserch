@@ -8,7 +8,7 @@ import { Loader2, RefreshCw, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SaveNoteButton } from "@/components/ui/SaveNoteButton";
-import { hasLlm, chatStream } from "@/lib/llm";
+import { ensureLlm, chatStream } from "@/lib/llm";
 
 const TOOL_LABEL: Record<string, string> = {
   query_quote: "查行情",
@@ -121,7 +121,7 @@ export function useDeepDive(ns: string, date: string): DeepDiveState {
     setAiErr(null);
     setNeedConfig(false);
     if (expand) setOpen(item.key);
-    if (!hasLlm()) {
+    if (!(await ensureLlm())) {
       setNeedConfig(true);
       if (!expand) setOpen(item.key); // 批量时也把配置提示亮出来
       return false;
@@ -176,7 +176,7 @@ export function useDeepDive(ns: string, date: string): DeepDiveState {
     if (batch) return; // 已在批量中
     const todo = items.filter((it) => !analysis[it.key]);
     if (todo.length === 0) return;
-    if (!hasLlm()) {
+    if (!(await ensureLlm())) {
       setNeedConfig(true);
       if (todo[0]) setOpen(todo[0].key);
       return;

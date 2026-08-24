@@ -1668,12 +1668,59 @@ def _live_cli_runtime():
 
 def test_codex_cli_runs_read_only_and_ephemeral():
     """The dashboard must not let a review call mutate the workspace or retain a session."""
-    from vr import cli_runtime
+    import runpy
 
-    args = cli_runtime._CLI_DEFS["codex"]["build_args"](None)
+    runtime = runpy.run_path("vr/cli_runtime.py")
+    args = runtime["_CLI_DEFS"]["codex"]["build_args"](None)
     assert args[:4] == ["exec", "--sandbox", "read-only", "--ephemeral"]
     assert "--skip-git-repo-check" in args
     assert args[-1] == "-"
+
+
+def test_cli_text_pipes_round_trip_utf8():
+    """Windows code pages must not corrupt Chinese prompts or UI symbols."""
+    import runpy
+    import sys
+
+    runtime = runpy.run_path("vr/cli_runtime.py")
+    kind = "utf8-roundtrip-test"
+    runtime["_CLI_DEFS"][kind] = {
+        "bins": [sys.executable],
+        "delivery": "stdin",
+        "build_args": lambda _: [
+            "-c",
+            "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())",
+        ],
+        "env": {},
+    }
+    try:
+        system_prompt = "✨ 系统提示"
+        user_prompt = "分析协鑫能科：中文、箭头→和百分号%"
+        expected = f"{system_prompt}\n\n{user_prompt}"
+        assert runtime["run_cli"](kind, system_prompt, user_prompt) == expected
+        assert "".join(runtime["run_cli_stream"](kind, system_prompt, user_prompt)) == expected
+    finally:
+        runtime["_CLI_DEFS"].pop(kind, None)
+
+
+def test_frontend_autoselects_allowed_codex():
+    """The local launcher should not require a duplicate browser-side model choice."""
+    import pathlib
+
+    llm = pathlib.Path("frontend/src/lib/llm.ts").read_text(encoding="utf-8")
+    deep_dive = pathlib.Path("frontend/src/components/ui/DeepDive.tsx").read_text(encoding="utf-8")
+    assert 'm.provider === "cli-codex"' in llm
+    assert "serverAllowsCli(m.provider) === true" in llm
+    assert "return ok ? c : autoLocalLlm()" in llm
+    assert "await primeCliAvailability(authHeaders())" in llm
+    assert "await ensureLlm()" in deep_dive
+
+
+def test_spa_entry_does_not_cache_old_frontend_bundle():
+    import pathlib
+
+    server = pathlib.Path("server.py").read_text(encoding="utf-8")
+    assert server.count('headers={"Cache-Control": "no-store"}') >= 2
 
 
 class TestBlockedCliRemovedFromRuntime:

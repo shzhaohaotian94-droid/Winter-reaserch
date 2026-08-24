@@ -58,6 +58,11 @@ _EXTRA_PATH_DIRS = [
 
 _CLI_TIMEOUT_S = 300  # 子进程兜底超时（秒）
 _MAX_ARG_BYTES = 110_000  # 位置参数投递的提示词字节上限
+_TEXT_PIPE_KWARGS = {
+    "text": True,
+    "encoding": "utf-8",
+    "errors": "replace",
+}
 
 
 class CliUnavailable(RuntimeError):
@@ -124,10 +129,10 @@ def run_cli(kind: str, system_prompt: str, user_prompt: str) -> str:
                 [bin_path, *args],
                 input=stdin_payload,
                 capture_output=True,
-                text=True,
                 cwd=tmpdir,
                 env=env,
                 timeout=_CLI_TIMEOUT_S,
+                **_TEXT_PIPE_KWARGS,
             )
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"{kind} 生成超时（>{_CLI_TIMEOUT_S}s）") from e
@@ -171,7 +176,8 @@ def run_cli_stream(kind: str, system_prompt: str, user_prompt: str):
 
         proc = subprocess.Popen(
             [bin_path, *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, cwd=tmpdir, env=env, text=True, bufsize=1,
+            stderr=subprocess.DEVNULL, cwd=tmpdir, env=env, bufsize=1,
+            **_TEXT_PIPE_KWARGS,
         )
         if stdin_payload is not None:
             try:

@@ -3,7 +3,7 @@ import { apiUrl } from "./base";
 
 import { ApiError, authHeaders } from "./api";
 import { blockedReason, cliAvailability, cliKindOf, isCliProvider, serverAllowsCli,
-  type ProviderId } from "./ai-models";
+  primeCliAvailability, subscriptionModels, type ProviderId } from "./ai-models";
 
 export interface LlmConfig {
   provider: ProviderId;
@@ -25,6 +25,16 @@ export interface ChatResult {
 
 const KEY = "vr-llm";
 
+function autoLocalLlm(): LlmConfig | null {
+  const usable = subscriptionModels.filter(
+    (m) => !m.comingSoon && serverAllowsCli(m.provider) === true,
+  );
+  const model = usable.find((m) => m.provider === "cli-codex") ?? usable[0];
+  return model
+    ? { provider: model.provider, baseURL: "", apiKey: "", model: model.id }
+    : null;
+}
+
 export function staleBlockedProvider(): string | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -43,14 +53,14 @@ export function staleBlockedProvider(): string | null {
 export function loadLlm(): LlmConfig | null {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
+    if (!raw) return autoLocalLlm();
     const c = JSON.parse(raw) as LlmConfig;
-    if (serverAllowsCli(c.provider) === false) return null;
+    if (serverAllowsCli(c.provider) === false) return autoLocalLlm();
     // 订阅(CLI)：有 model 即可，免 key；API：需 baseURL + key + model。
     const ok = c.model && (isCliProvider(c.provider) || (c.baseURL && c.apiKey));
-    return ok ? c : null;
+    return ok ? c : autoLocalLlm();
   } catch {
-    return null;
+    return autoLocalLlm();
   }
 }
 
@@ -66,6 +76,12 @@ export function hasLlm(): boolean {
   return loadLlm() !== null;
 }
 
+export async function ensureLlm(): Promise<boolean> {
+  if (hasLlm()) return true;
+  await primeCliAvailability(authHeaders());
+  return hasLlm();
+}
+
 export interface ChatHandlers {
   onDelta?: (text: string) => void;             // 答案逐块吐字
   onTool?: (tool: string, args: Record<string, unknown>) => void; // AI 调了某数据工具
@@ -75,6 +91,7 @@ export interface ChatHandlers {
 // 边流边回调 onDelta/onTool；返回累积的最终 {content, trace, rounds}。
 // signal：调用方可传 AbortController.signal，用户关面板/换问题时中止请求（省订阅/API 额度）。
 export async function chatStream(messages: ChatMsg[], context: string, handlers: ChatHandlers = {}, signal?: AbortSignal): Promise<ChatResult> {
+  if (!(await ensureLlm())) throw new ApiError("尚未接入 AI，请先在「接入 AI」里配置", 400);
   const llm = loadLlm();
   if (!llm) throw new ApiError("尚未接入 AI，请先在「接入 AI」里配置", 400);
 

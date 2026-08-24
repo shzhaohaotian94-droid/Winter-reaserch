@@ -213,16 +213,12 @@ export function Settings() {
             <div className="mt-2 flex items-start gap-2 rounded-lg border border-border bg-muted/20 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>
-                <b>为什么只剩 Claude Code 可选</b>：其余几个 CLI 以「自动批准」方式运行，
-                会<b>不经询问</b>地读写文件、执行命令；而问 AI 时
-                <b>页面上下文会原样进 prompt</b> —— 页面里那些抓来的
-                外部新闻与研报原文，若夹带提示注入，就能驱动它动你的文件。
-                Claude Code 被限制了文件与命令工具
-                （<code className="text-[10px]">--disallowedTools</code>），
-                <b>功能上完全够用</b>（问 AI 是一次性作答，不需要那些工具）。
-                要放开某一个：给服务端设
-                <code className="text-[10px]">VIBE_ALLOW_UNSAFE_CLI=qwen</code>（可逗号分隔），
-                前端不用改。
+                <b>本机 CLI 安全说明</b>：Claude Code 会禁用文件与命令工具；Codex 使用
+                <code className="text-[10px]">read-only</code> 沙箱和临时会话，不能修改项目文件。
+                页面上下文会原样进 prompt，因此不要把敏感信息放进问答上下文。
+                Qwen / DeepSeek 等自动批准型 CLI 默认关闭。服务端仍要求通过
+                <code className="text-[10px]">VIBE_ALLOW_UNSAFE_CLI</code> 明确列出额外放行项，
+                Winter 启动脚本已经为这台电脑放行 Codex。
               </span>
             </div>
             <div className="flex items-center gap-2 pt-1">

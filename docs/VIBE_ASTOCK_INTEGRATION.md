@@ -23,6 +23,8 @@ The embedded UI hides Vibe-Astock's duplicate sidebar. `独立打开` retains th
 
 The Windows launcher uses the already signed-in Codex subscription for AI review generation. Codex runs from an empty temporary directory with `--sandbox read-only --ephemeral`; it cannot write project files and does not persist one session per analysis call.
 
+When the backend reports Codex as installed and allowed, the embedded frontend now selects it automatically if the browser has no valid model configuration. CLI stdin/stdout is forced to UTF-8 so Chinese prompts and symbols such as `✨` work on Windows regardless of the active code page. The SPA entry document is served with `Cache-Control: no-store` so the Winter iframe does not retain an obsolete frontend bundle after an update.
+
 ## Public deployment
 
 GitHub Actions builds Vibe-Astock at `/Winter-reaserch/astock/`. Configure the repository variable `VITE_ASTOCK_API_URL` with the public Vibe-Astock backend URL. `render.yaml` defines the `vibe-astock-api` service for that backend.

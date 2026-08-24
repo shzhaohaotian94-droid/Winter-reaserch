@@ -744,7 +744,7 @@ def api_review_chat(request: Request, body: dict = Body(...)):
 def index():
     dist_index = os.path.join(_DIST, "index.html")
     if os.path.isfile(dist_index):
-        return FileResponse(dist_index)
+        return FileResponse(dist_index, headers={"Cache-Control": "no-store"})
     return JSONResponse(
         {"error": "未找到前端构建产物，请先执行：cd frontend && npm install && npm run build"},
         status_code=503,
@@ -807,7 +807,10 @@ def _mount_static() -> None:
         candidate = safe_join(_DIST, full_path) if full_path else None
         if candidate and os.path.isfile(candidate):
             return FileResponse(candidate)
-        return FileResponse(os.path.join(_DIST, "index.html"))
+        return FileResponse(
+            os.path.join(_DIST, "index.html"),
+            headers={"Cache-Control": "no-store"},
+        )
 
     print(f"✓ React 构建产物已挂载（{_DIST}）")
 
