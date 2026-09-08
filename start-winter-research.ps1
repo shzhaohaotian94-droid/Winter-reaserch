@@ -3,13 +3,16 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Backend = Join-Path $Root "backend"
 $Frontend = Join-Path $Root "frontend"
+$Desktop = Join-Path $Root "desktop"
+$Orchestrator = Join-Path $Root "orchestrator"
 $Astock = Join-Path $Root "integrations\vibe-astock"
 $AstockFrontend = Join-Path $Astock "frontend"
 $AstockPython = Join-Path $Astock ".venv\Scripts\python.exe"
 $BackendPython = Join-Path $Backend ".venv\Scripts\python.exe"
 $env:PIP_CACHE_DIR = Join-Path $Root ".cache\pip"
 $env:npm_config_cache = Join-Path $Root ".cache\npm"
-$SystemPython = "C:\Users\Administrator\AppData\Local\Python\pythoncore-3.14-64\python.exe"
+$PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+$SystemPython = if ($PythonCommand) { $PythonCommand.Source } else { $null }
 
 function Test-HttpOk($Url) {
   try {
@@ -20,9 +23,32 @@ function Test-HttpOk($Url) {
   }
 }
 
+function Test-TcpPort([int]$Port) {
+  $client = [System.Net.Sockets.TcpClient]::new()
+  try {
+    $task = $client.ConnectAsync("127.0.0.1", $Port)
+    return $task.Wait(300) -and $client.Connected
+  } catch {
+    return $false
+  } finally {
+    $client.Dispose()
+  }
+}
+
+& node (Join-Path $Root "scripts\check-node.mjs")
+if ($LASTEXITCODE -ne 0) { throw "Node.js 版本不符合 Vibe-Research v1.1.0 要求。" }
+
+if (-not (Test-Path (Join-Path $Root ".local\config.json")) -or
+    -not (Test-Path (Join-Path $Root ".venv\Scripts\python.exe")) -or
+    -not (Test-Path (Join-Path $Desktop "node_modules")) -or
+    -not (Test-Path (Join-Path $Orchestrator "node_modules"))) {
+  & (Join-Path $Root "scripts\setup-windows.ps1") -SkipDoctor
+  if ($LASTEXITCODE -ne 0) { throw "Vibe-Research v1.1.0 初始化失败。" }
+}
+
 if (-not (Test-Path $BackendPython)) {
   Push-Location $Backend
-  if (Test-Path $SystemPython) {
+  if ($SystemPython -and (Test-Path $SystemPython)) {
     & $SystemPython -m venv .venv
   } else {
     python -m venv .venv
@@ -78,6 +104,20 @@ if (-not (Test-HttpOk "http://127.0.0.1:8910/api/health")) {
     -WindowStyle Hidden
 }
 
+if (-not (Test-TcpPort 8765)) {
+  Start-Process -FilePath "node" `
+    -ArgumentList @("orchestrator\src\api.ts", "--port", "8765", "--host", "127.0.0.1") `
+    -WorkingDirectory $Root `
+    -WindowStyle Hidden
+}
+
+if (-not (Test-TcpPort 5930)) {
+  Start-Process -FilePath "npm.cmd" `
+    -ArgumentList @("run", "dev", "--prefix", "desktop") `
+    -WorkingDirectory $Root `
+    -WindowStyle Hidden
+}
+
 $frontendReady = Test-HttpOk "http://127.0.0.1:5899/winter"
 if (-not $frontendReady) {
   Start-Process -FilePath "npm.cmd" `
@@ -89,10 +129,12 @@ if (-not $frontendReady) {
 for ($i = 0; $i -lt 90; $i++) {
   if ((Test-HttpOk "http://127.0.0.1:8900/api/health") -and `
       (Test-HttpOk "http://127.0.0.1:8910/api/health") -and `
-      (Test-HttpOk "http://127.0.0.1:5899/winter")) {
+      (Test-HttpOk "http://127.0.0.1:5899/winter") -and `
+      (Test-HttpOk "http://127.0.0.1:5930/api/health") -and `
+      (Test-HttpOk "http://127.0.0.1:5930/winter")) {
     break
   }
   Start-Sleep -Seconds 1
 }
 
-Start-Process "http://127.0.0.1:5899/winter"
+Start-Process "http://127.0.0.1:5930/winter"

@@ -14,7 +14,7 @@ from typing import Any
 
 import astock
 
-RESEARCH_ROOT = Path(r"C:\Users\Administrator\Desktop\思考")
+RESEARCH_ROOT = Path.home() / "Desktop" / "思考"
 RESEARCH_ROOT = Path(os.environ.get("VR_RESEARCH_ROOT", str(RESEARCH_ROOT)))
 
 KEYWORDS = [

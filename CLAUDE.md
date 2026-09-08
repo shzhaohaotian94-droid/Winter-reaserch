@@ -5,9 +5,9 @@
 ## 来源
 
 - 上游开源仓库：`simonlin1212/Vibe-Research`
-- 本地目录：`C:\Users\Administrator\Documents\Codex\2026-07-07\i-aiaiaiaiaiai-claude-code\work\Vibe-Research-Winter-src`
-- 旧看板参考：`I:\AIAIAIAIAIAI\claude code\Vibe-Trading`
-- 旧空项目参考：`I:\AIAIAIAIAIAI\claude code\大A投研看板`
+- 当前项目代码：本仓库根目录
+- 长期项目记忆：相邻的 `project-memory` 仓库
+- 旧看板资料：仅作为迁移来源，不再作为运行入口
 
 ## 已接入内容
 
@@ -28,9 +28,9 @@
 
 ## 运行方式
 
-推荐使用根目录的 `start-winter-research.bat`，它会启动后端 `8900`、前端 `5899`，然后打开 `http://localhost:5899/winter`。
+推荐使用根目录的 `start-winter-research.bat`。它会启动新版工作台 `5930`、编排器 `8765`、研究后端 `8900`、短线复盘服务 `8910` 和公开兼容前端 `5899`，然后打开 `http://127.0.0.1:5930/winter`。
 
-桌面快捷方式已创建：`C:\Users\Administrator\Desktop\Winter Research Dashboard.lnk`。
+桌面快捷方式 `Winter Research Dashboard` 指向同一个统一启动器。
 
 首次启动默认安装 `backend/requirements-lite.txt`，足够支撑 Winter 首页、基础行情和看板壳。若要启用深度数据页的 akshare/mootdx/pandas 能力，再手动安装 `backend/requirements.txt`。
 
