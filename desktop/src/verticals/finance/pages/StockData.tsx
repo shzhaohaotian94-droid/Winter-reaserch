@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search, FileText, Newspaper, Loader2, AlertCircle, LineChart, BarChart3, Megaphone,
   Wallet, Trophy, CalendarClock, Boxes, MessageSquare,
@@ -17,6 +17,7 @@ import {
   type GlobalStock, type HkCashflow,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { usePersistentState } from "@/lib/persistentState";
 
 // 金额格式化（后端资金单位：元 / 万元）
 const yi = (v: number | null) => v == null ? "—" : `${(v / 1e8).toFixed(2)} 亿`;
@@ -35,6 +36,8 @@ const bigMoney = (v: number | null, market: string) =>
   v == null ? "—" : v >= 1e12 ? `${(v / 1e12).toFixed(2)} 万亿${curOf(market)}` : `${(v / 1e8).toFixed(0)} 亿${curOf(market)}`;
 const round2 = (v: number | null | undefined, suffix = "") =>
   v == null ? "—" : `${Math.round(v * 100) / 100}${suffix}`;
+let latestStockRunId = 0;
+let stockRunInFlight = false;
 
 // 百分比：后端偶发给 null/缺字段时显示 —，不出现 "NaN%" / 误导性 "0.00%"
 const pct = (v: number | null | undefined) =>
@@ -80,10 +83,10 @@ function ValBand({ label, m }: { label: string; m: ValMetric }) {
 }
 
 export function StockData() {
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [code, setCode] = usePersistentState("stock.code", "");
+  const [loading, setLoading] = usePersistentState("stock.loading", false);
   const [err, setErr] = useState<string | null>(null);
-  const [val, setVal] = useState<Valuation | null>(null);
+  const [val, setVal] = usePersistentState<Valuation | null>("stock.valuation", null);
   /**
    * 消化年数的**四情景**。
    * 🔴 不在前端算 —— 调 Core 的确定性计算库（`/tool/calc`）。
@@ -91,32 +94,36 @@ export function StockData() {
    *    于是最乐观那一档被当成了既定事实（实测 0.05 年，而 18 倍锚下是 1.14 年）。
    *    在这儿再抄一份公式，就是把"两套计算链路"这个病又种一次。
    */
-  const [digest, setDigest] = useState<{ name: string; anchor: number | null; years: number | null; status: string }[] | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [pctl, setPctl] = useState<ValPercentile | null>(null);
-  const [fin, setFin] = useState<Financials | null>(null);
-  const [anns, setAnns] = useState<Announcement[]>([]);
+  const [digest, setDigest] = usePersistentState<{ name: string; anchor: number | null; years: number | null; status: string }[] | null>("stock.digest", null);
+  const [reports, setReports] = usePersistentState<Report[]>("stock.reports", []);
+  const [news, setNews] = usePersistentState<NewsItem[]>("stock.news", []);
+  const [pctl, setPctl] = usePersistentState<ValPercentile | null>("stock.percentile", null);
+  const [fin, setFin] = usePersistentState<Financials | null>("stock.financials", null);
+  const [anns, setAnns] = usePersistentState<Announcement[]>("stock.announcements", []);
   const [depNote, setDepNote] = useState<string | null>(null);
   // 资金面 / 筹码 / 信号（v3.3 并入）
-  const [margin, setMargin] = useState<MarginRow[]>([]);
-  const [blockT, setBlockT] = useState<BlockTradeRow[]>([]);
-  const [holders, setHolders] = useState<HolderRow[]>([]);
-  const [dividend, setDividend] = useState<DividendRow[]>([]);
-  const [fundFlow, setFundFlow] = useState<FundFlowRow[]>([]);
-  const [dt, setDt] = useState<DragonTiger | null>(null);
-  const [lockup, setLockup] = useState<Lockup | null>(null);
-  const [blocks, setBlocks] = useState<Blocks | null>(null);
-  const [hotCon, setHotCon] = useState<HotConcept[]>([]);
-  const [qa, setQa] = useState<QaRow[]>([]);
-  const [gstock, setGStock] = useState<GlobalStock | null>(null);  // 美股 / 港股
-  const [cashflow, setCashflow] = useState<HkCashflow | null>(null);  // 港股现金流量表（仅港股）
-  const runIdRef = useRef(0);
+  const [margin, setMargin] = usePersistentState<MarginRow[]>("stock.margin", []);
+  const [blockT, setBlockT] = usePersistentState<BlockTradeRow[]>("stock.block-trades", []);
+  const [holders, setHolders] = usePersistentState<HolderRow[]>("stock.holders", []);
+  const [dividend, setDividend] = usePersistentState<DividendRow[]>("stock.dividend", []);
+  const [fundFlow, setFundFlow] = usePersistentState<FundFlowRow[]>("stock.fund-flow", []);
+  const [dt, setDt] = usePersistentState<DragonTiger | null>("stock.dragon-tiger", null);
+  const [lockup, setLockup] = usePersistentState<Lockup | null>("stock.lockup", null);
+  const [blocks, setBlocks] = usePersistentState<Blocks | null>("stock.blocks", null);
+  const [hotCon, setHotCon] = usePersistentState<HotConcept[]>("stock.hot-concepts", []);
+  const [qa, setQa] = usePersistentState<QaRow[]>("stock.qa", []);
+  const [gstock, setGStock] = usePersistentState<GlobalStock | null>("stock.global", null);  // 美股 / 港股
+  const [cashflow, setCashflow] = usePersistentState<HkCashflow | null>("stock.hk-cashflow", null);  // 港股现金流量表（仅港股）
+  useEffect(() => {
+    if (loading && !stockRunInFlight) setLoading(false);
+  }, []);
 
   const run = async () => {
     const c = code.trim().toUpperCase();
     if (!c) { setErr("请输入代码"); return; }
-    const rid = ++runIdRef.current;
+    if (stockRunInFlight) return;
+    const rid = ++latestStockRunId;
+    stockRunInFlight = true;
     setLoading(true); setErr(null); setDepNote(null); setVal(null); setDigest(null); setReports([]); setNews([]); setPctl(null); setFin(null); setAnns([]);
     setMargin([]); setBlockT([]); setHolders([]); setDividend([]); setFundFlow([]); setDt(null); setLockup(null); setBlocks(null); setHotCon([]); setQa([]);
     setGStock(null); setCashflow(null);
@@ -124,20 +131,20 @@ export function StockData() {
     // 6 位纯数字 = A 股；否则（字母 / 港股短代码）走美股 / 港股（global-stock-data）
     if (!/^\d{6}$/.test(c)) {
       // 港股现金流独立回填（美股返回 404 → 静默留空，卡片不渲染）
-      api.hkCashflow(c).then((cf) => { if (rid === runIdRef.current) setCashflow(cf); }).catch(() => { if (rid === runIdRef.current) setCashflow(null); });
+      api.hkCashflow(c).then((cf) => { if (rid === latestStockRunId) setCashflow(cf); }).catch(() => { if (rid === latestStockRunId) setCashflow(null); });
       try {
         const g = await api.globalStock(c);
-        if (rid === runIdRef.current) setGStock(g);
+        if (rid === latestStockRunId) setGStock(g);
       } catch (e) {
-        if (rid === runIdRef.current) setErr(e instanceof ApiError ? e.message : "查询失败");
+        if (rid === latestStockRunId) setErr(e instanceof ApiError ? e.message : "查询失败");
       } finally {
-        if (rid === runIdRef.current) setLoading(false);
+        if (rid === latestStockRunId) { stockRunInFlight = false; setLoading(false); }
       }
       return;
     }
 
     // A 股：竞态守卫（快速换代码时只让最新一次回填）+ 资金面/筹码独立回填、不阻塞主数据
-    const ok = <T,>(set: (v: T) => void) => (v: T) => { if (rid === runIdRef.current) set(v); };
+    const ok = <T,>(set: (v: T) => void) => (v: T) => { if (rid === latestStockRunId) set(v); };
     api.margin(c).then(ok(setMargin)).catch(() => {});
     api.blockTrade(c).then(ok(setBlockT)).catch(() => {});
     api.holders(c).then(ok(setHolders)).catch(() => {});
@@ -157,7 +164,7 @@ export function StockData() {
         api.financials(c).catch(() => null),
         api.announcements(c).catch(() => []),
       ]);
-      if (rid !== runIdRef.current) return;
+      if (rid !== latestStockRunId) return;
       setVal(v);
       // ⚠️ calc 收的 cagr 是**小数**不是百分数（`|CAGR| > 5` 会直接报错）——
       //    界面的 cagr_pct 是百分数，这里必须除以 100。第一次就是漏了这步，四情景全 error。
@@ -169,7 +176,7 @@ export function StockData() {
           )
           .then((r: { ok: boolean; result?: { details?: { scenarios?: Record<string, { value: number | null; status: string; details?: { anchor?: number } }> } } }) => {
             // 🔴 慢请求回来时若已经查了别的主体,不许覆盖 —— 否则 A 的四情景会显示在 B 的名字下面
-            if (rid !== runIdRef.current) return;
+            if (rid !== latestStockRunId) return;
             const sc = r?.result?.details?.scenarios;
             if (!r?.ok || !sc) { setDigest(null); return; }
             setDigest(Object.entries(sc).map(([name, x]: [string, { value: number | null; status: string; details?: { anchor?: number } }]) => ({
@@ -180,7 +187,7 @@ export function StockData() {
               status: x.status,
             })));
           })
-          .catch(() => { if (rid === runIdRef.current) setDigest(null); });   // 算不出就不显示这一块,不退回单点数字
+          .catch(() => { if (rid === latestStockRunId) setDigest(null); });   // 算不出就不显示这一块,不退回单点数字
       }
       setReports(r);
       setPctl(p);
@@ -188,15 +195,15 @@ export function StockData() {
       setAnns(a);
       try {
         const n = await api.news(c);
-        if (rid === runIdRef.current) setNews(n);
+        if (rid === latestStockRunId) setNews(n);
       } catch (e) {
-        if (rid === runIdRef.current && e instanceof ApiError && e.status === 501) setDepNote(e.message);
+        if (rid === latestStockRunId && e instanceof ApiError && e.status === 501) setDepNote(e.message);
       }
     } catch (e) {
-      if (rid !== runIdRef.current) return;
+      if (rid !== latestStockRunId) return;
       setErr(e instanceof ApiError ? e.message : "查询失败");
     } finally {
-      if (rid === runIdRef.current) setLoading(false);
+      if (rid === latestStockRunId) { stockRunInFlight = false; setLoading(false); }
     }
   };
 

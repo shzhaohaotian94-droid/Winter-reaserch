@@ -14,6 +14,7 @@ import { displayedHeadlineTranslation, hasChinese, headlineNeedsTranslation, loa
 import { loadWatch } from "@/lib/watchlist";
 import { hasLlm, chatStream, translateHeadlineBatch } from "@/lib/llm";
 import { cn } from "@/lib/utils";
+import { usePersistentState } from "@/lib/persistentState";
 
 // 顺序即侧栏子栏目顺序（Layout 的 INTEL_LINKS 与此一致）
 const TABS = [
@@ -31,15 +32,28 @@ interface TitleTranslation {
   error?: string;
 }
 
+const activeDigestRuns = new Set<string>();
+let intelBulkInFlight = false;
+
 function InvestmentNewsPanel() {
-  const [active, setActive] = useState("ai");
-  const [digests, setDigests] = useState<Record<string, Digest>>({});
-  const [bulk, setBulk] = useState<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 });
+  const [active, setActive] = usePersistentState("intel.active-industry", "ai");
+  const [digests, setDigests] = usePersistentState<Record<string, Digest>>("intel.digests", {});
+  const [bulk, setBulk] = usePersistentState<{ running: boolean; done: number; total: number }>("intel.bulk", { running: false, done: 0, total: 0 });
   const [titleTranslations, setTitleTranslations] = useState<Record<string, TitleTranslation>>({});
   const translationCache = useRef(loadHeadlineTranslationCache(typeof window === "undefined" ? undefined : window.localStorage));
   const latestTranslationRun = useRef(new Map<string, string>());
   const attemptedGeneration = useRef(new Set<string>());
   const [, redrawTranslations] = useState(0);
+
+  useEffect(() => {
+    setDigests((rows) => Object.fromEntries(Object.entries(rows).map(([key, value]) => [
+      key,
+      value.loading && !activeDigestRuns.has(key)
+        ? { ...value, loading: false, err: value.text ? undefined : "上次提炼在页面刷新时中断，可重新提炼。" }
+        : value,
+    ])));
+    if (bulk.running && !intelBulkInFlight) setBulk((value) => ({ ...value, running: false }));
+  }, []);
 
   // 打开先给存档、后台再刷（见 core/data/useArchiveThenRefresh）——
   // 抓一轮资讯要好几十秒，让人对着转圈等是最没必要的那种等待。
@@ -126,6 +140,7 @@ function InvestmentNewsPanel() {
 
   const genDigest = async (ind: Industry) => {
     if (!hasLlm()) { setDigests((d) => ({ ...d, [ind.key]: { needKey: true } })); return; }
+    activeDigestRuns.add(ind.key);
     setDigests((d) => ({ ...d, [ind.key]: { loading: true } }));
     const ctx = ind.items.slice(0, 25).map((it) => `[${it.time}] ${it.source}｜${displayedHeadlineTranslation(it, translationCache.current) || it.title}`).join("\n");
     const prompt =
@@ -138,6 +153,9 @@ function InvestmentNewsPanel() {
       });
     } catch (e) {
       setDigests((d) => ({ ...d, [ind.key]: { err: e instanceof ApiError ? e.message : "生成失败" } }));
+    } finally {
+      activeDigestRuns.delete(ind.key);
+      setDigests((d) => ({ ...d, [ind.key]: { ...d[ind.key], loading: false } }));
     }
   };
 
@@ -145,12 +163,17 @@ function InvestmentNewsPanel() {
   const genAll = async () => {
     if (!hasLlm()) { if (cur) setDigests((d) => ({ ...d, [cur.key]: { needKey: true } })); return; }
     const targets = industries.filter((i) => i.items.length > 0);
+    intelBulkInFlight = true;
     setBulk({ running: true, done: 0, total: targets.length });
-    for (const ind of targets) {
-      await genDigest(ind);
-      setBulk((b) => ({ ...b, done: b.done + 1 }));
+    try {
+      for (const ind of targets) {
+        await genDigest(ind);
+        setBulk((b) => ({ ...b, done: b.done + 1 }));
+      }
+    } finally {
+      intelBulkInFlight = false;
+      setBulk((b) => ({ ...b, running: false }));
     }
-    setBulk((b) => ({ ...b, running: false }));
   };
 
   const dg = cur ? digests[cur.key] : undefined;

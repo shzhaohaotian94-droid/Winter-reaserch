@@ -13,6 +13,7 @@ import { hasLlm, chatStream } from "@/lib/llm";
 import { SaveNoteButton } from "@/components/ui/SaveNoteButton";
 import { loadWatch, saveWatch, addCodes } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
+import { usePersistentState } from "@/lib/persistentState";
 
 // A股红涨绿跌。全球市场（美股/港股指数）**也沿用红涨**——与整个看板及东财等中国平台一致，
 // 对中国用户最不易看错（Simon 2026-07-05 确认；非国际绿涨惯例，是有意选择，勿改）。
@@ -21,20 +22,21 @@ const pctColor = (p: number | null | undefined) =>
   p == null ? "text-muted-foreground/40" : p > 0 ? "text-danger" : p < 0 ? "text-success" : "text-muted-foreground";
 const fmt = (v: number | null) => v == null ? "—" : v.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
 const yi = (v: number | null) => (v == null ? "—" : `${fmt(v / 1e8)} 亿`); // 元 → 亿
+let dailyReviewInFlight = false;
 
 export function DailyReview() {
-  const [indices, setIndices] = useState<IndexQuote[]>([]);
+  const [indices, setIndices] = usePersistentState<IndexQuote[]>("daily.indices", []);
   const [idxErr, setIdxErr] = useState(false);
   const [idxDone, setIdxDone] = useState(false);
   const fetchingRef = useRef(false);
-  const [review, setReview] = useState("");
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewErr, setReviewErr] = useState<string | null>(null);
+  const [review, setReview] = usePersistentState("daily.review", "");
+  const [reviewLoading, setReviewLoading] = usePersistentState("daily.review-loading", false);
+  const [reviewErr, setReviewErr] = usePersistentState<string | null>("daily.review-error", null);
   const [needConfig, setNeedConfig] = useState(false);
-  const [overview, setOverview] = useState<MarketOverview | null>(null);
-  const [emotion, setEmotion] = useState<ShortTermEmotion | null>(null);
-  const [turnover, setTurnover] = useState<TurnoverTop | null>(null);
-  const [globalIdx, setGlobalIdx] = useState<GlobalIndex[]>([]);
+  const [overview, setOverview] = usePersistentState<MarketOverview | null>("daily.overview", null);
+  const [emotion, setEmotion] = usePersistentState<ShortTermEmotion | null>("daily.emotion", null);
+  const [turnover, setTurnover] = usePersistentState<TurnoverTop | null>("daily.turnover", null);
+  const [globalIdx, setGlobalIdx] = usePersistentState<GlobalIndex[]>("daily.global-indices", []);
   const [globalErr, setGlobalErr] = useState<string | null>(null);
   const [globalDone, setGlobalDone] = useState(false);
   // 关注股票（自选，存本地）
@@ -53,11 +55,10 @@ export function DailyReview() {
     if (fetchingRef.current || reviewLoading) return;
     fetchingRef.current = true;
     setIdxDone(false); setIdxErr(false); setOvDone(false); setEmoDone(false); setToDone(false);
-    setEmotion(null); setTurnover(null); setOverview(null); setPageMeta(null);
-    const indexTask = api.indices(refresh).then(setIndices).catch(() => { setIndices([]); setIdxErr(true); }).finally(() => setIdxDone(true));
+    setPageMeta(null);
+    const indexTask = api.indices(refresh).then(setIndices).catch(() => { setIdxErr(true); }).finally(() => setIdxDone(true));
     setGlobalDone(false);
     setGlobalErr(null);
-    setGlobalIdx([]);
     const globalTask = api.globalIndices(refresh).then(setGlobalIdx)
       .catch((e) => setGlobalErr(e instanceof Error ? e.message : "全球指数获取失败"))
       .finally(() => setGlobalDone(true));
@@ -100,6 +101,10 @@ export function DailyReview() {
   };
 
   useEffect(() => {
+    if (reviewLoading && !dailyReviewInFlight) {
+      setReviewLoading(false);
+      setReviewErr("上次复盘在页面刷新时中断；已保留当时生成的文字，可以重新复盘。");
+    }
     loadIndices();
     refreshWatch(loadWatch());
   }, []);
@@ -125,7 +130,7 @@ export function DailyReview() {
    *    页面各自拼旧端点时实测出现过：标题与"市场情绪"是 08-27，"短线情绪"却是 08-26 ——
    *    同一屏跨了两天，而**页面上看不出任何异常**。
    */
-  const [pageMeta, setPageMeta] = useState<PageResult | null>(null);
+  const [pageMeta, setPageMeta] = usePersistentState<PageResult | null>("daily.page-meta", null);
   const [pageErr, setPageErr] = useState<string | null>(null);
   /** 这一屏在看哪一天 —— **只认 Core 给的业务日**（拿不到就是 null，不拿本地日期顶上） */
   const bizDay = pageMeta ? pageMeta.context.review_date ?? pageMeta.context.last_trading_day : null;
@@ -138,6 +143,7 @@ export function DailyReview() {
     setReviewErr(null);
     setNeedConfig(false);
     if (!hasLlm()) { setNeedConfig(true); return; }
+    dailyReviewInFlight = true;
     setReviewLoading(true);
     setReview("");
     const prompt =
@@ -153,6 +159,7 @@ export function DailyReview() {
     } catch (e) {
       setReviewErr(e instanceof ApiError ? e.message : "复盘失败");
     } finally {
+      dailyReviewInFlight = false;
       setReviewLoading(false);
     }
   };

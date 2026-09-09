@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Swords, Play, Square, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,6 +11,7 @@ import { debateStream, type DebateStage } from "@/lib/agents";
 import type { DebateNumberAudit } from "@/lib/backend";
 import { addNote, loadNotes, type Note } from "@/lib/notes";
 import { ApiError } from "@/lib/api";
+import { usePersistentState } from "@/lib/persistentState";
 
 interface StageBox {
   stage: DebateStage;
@@ -32,6 +33,7 @@ const STAGE_TONE: Record<DebateStage, string> = {
 };
 
 const DOSSIER_HINT = "多空双方拿到的是同一份接口实时拉取的数据，谁也不能靠编数字赢。";
+let activeDebateController: AbortController | null = null;
 
 
 /**
@@ -94,18 +96,24 @@ function auditMarkdown(a?: DebateNumberAudit): string[] {
 }
 
 export function Debate() {
-  const [code, setCode] = useState("");
-  const [rounds, setRounds] = useState(1);
-  const [running, setRunning] = useState(false);
-  const [status, setStatus] = useState("");
-  const [progress, setProgress] = useState<{ title: string; ok: boolean }[]>([]);
-  const [missing, setMissing] = useState<string[]>([]);
-  const [stages, setStages] = useState<StageBox[]>([]);
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [code, setCode] = usePersistentState("debate.code", "");
+  const [rounds, setRounds] = usePersistentState("debate.rounds", 1);
+  const [running, setRunning] = usePersistentState("debate.running", false);
+  const [status, setStatus] = usePersistentState("debate.status", "");
+  const [progress, setProgress] = usePersistentState<{ title: string; ok: boolean }[]>("debate.progress", []);
+  const [missing, setMissing] = usePersistentState<string[]>("debate.missing", []);
+  const [stages, setStages] = usePersistentState<StageBox[]>("debate.stages", []);
+  const [error, setError] = usePersistentState("debate.error", "");
+  const [saved, setSaved] = usePersistentState("debate.saved", false);
   const [notes, setNotes] = useState<Note[]>(loadNotes);
-  const abortRef = useRef<AbortController | null>(null);
-  const stagesRef = useRef<StageBox[]>([]);
+  const stagesRef = useRef<StageBox[]>(stages);
+
+  useEffect(() => {
+    if (running && !activeDebateController) {
+      setRunning(false);
+      setStatus("上次辩论在页面刷新时中断；已保留当时生成的内容，可重新开始继续研究。");
+    }
+  }, []);
 
   const updateStages = (fn: (rows: StageBox[]) => StageBox[]) => setStages((rows) => {
     const next = fn(rows);
@@ -121,35 +129,36 @@ export function Debate() {
   async function start() {
     const c = code.trim();
     if (!/^\d{6}$/.test(c)) { setError("请输入 6 位 A 股代码"); return; }
+    if (activeDebateController) return;
     reset();
-    setRunning(true);
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    activeDebateController = ctrl;
+    setRunning(true);
     try {
       const final = await debateStream(c, rounds, {
-        onStatus: (message) => { if (abortRef.current === ctrl) setStatus(message); },
+        onStatus: (message) => { if (activeDebateController === ctrl) setStatus(message); },
         onDossierProgress: (title, ok, loaded, total) => {
-          if (abortRef.current !== ctrl) return;
+          if (activeDebateController !== ctrl) return;
           setStatus(`正在拉取客观事实底稿… ${loaded}/${total}`);
           setProgress((p) => [...p, { title, ok }]);
         },
         onDossierReady: (_sections, miss) => {
-          if (abortRef.current === ctrl) { setMissing(miss); setStatus("底稿就绪，辩论开始"); }
+          if (activeDebateController === ctrl) { setMissing(miss); setStatus("底稿就绪，辩论开始"); }
         },
         onStageStart: (stage, label) => {
-          if (abortRef.current === ctrl) updateStages((s) => [...s, { stage, label, content: "", done: false }]);
+          if (activeDebateController === ctrl) updateStages((s) => [...s, { stage, label, content: "", done: false }]);
         },
         onDelta: (stage, text, audit) => {
-          if (abortRef.current === ctrl) updateStages((s) => s.map((b) => (b.stage === stage && !b.done ? { ...b, content: b.content + text, ...(audit ? { audit } : {}) } : b)));
+          if (activeDebateController === ctrl) updateStages((s) => s.map((b) => (b.stage === stage && !b.done ? { ...b, content: b.content + text, ...(audit ? { audit } : {}) } : b)));
         },
         onStageDone: (stage, _label, content) => {
-          if (abortRef.current === ctrl) updateStages((s) => s.map((b) => (b.stage === stage && !b.done ? { ...b, content, done: true } : b)));
+          if (activeDebateController === ctrl) updateStages((s) => s.map((b) => (b.stage === stage && !b.done ? { ...b, content, done: true } : b)));
         },
         onError: (message, stage) => {
-          if (abortRef.current === ctrl) setError(stage ? `${stage}：${message}` : message);
+          if (activeDebateController === ctrl) setError(stage ? `${stage}：${message}` : message);
         },
       }, ctrl.signal);
-      if (abortRef.current === ctrl && !ctrl.signal.aborted && final?.done
+      if (activeDebateController === ctrl && !ctrl.signal.aborted && final?.done
           && final.outcome !== "failed" && final.outcome !== "cancelled" && stagesRef.current.some((s) => s.done)) {
         const body = [
           `# 多空辩论 · ${c}`,
@@ -171,21 +180,21 @@ export function Debate() {
         }
       }
     } catch (e) {
-      if (abortRef.current === ctrl) {
+      if (activeDebateController === ctrl) {
         if (e instanceof DOMException && e.name === "AbortError") setStatus("已请求中止；页面停止等待，后台停止尚未确认");
         else setError(e instanceof ApiError ? e.message : String(e));
       }
     } finally {
-      if (abortRef.current === ctrl) {
+      if (activeDebateController === ctrl) {
         if (ctrl.signal.aborted) setStatus("已请求中止；页面停止等待，后台停止尚未确认");
         setRunning(false);
-        abortRef.current = null;
+        activeDebateController = null;
       }
     }
   }
 
   function stop() {
-    abortRef.current?.abort();
+    activeDebateController?.abort();
     setStatus("正在中止…");
   }
 

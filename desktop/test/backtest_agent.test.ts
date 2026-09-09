@@ -45,8 +45,9 @@ test("多空辩论完成后自动归档，并在本页展示历史报告", () =>
   assert.match(debate, /<ReportHistory kind="多空辩论"/);
   assert.match(debate, /数字复核/);
   assert.match(debate, /算式重算不一致/);
-  assert.match(debate, /abortRef\.current === ctrl/);
-  assert.doesNotMatch(debate, /abortRef\.current\?\.abort\(\);\s*setRunning\(false\)/);
+  assert.match(debate, /activeDebateController === ctrl/);
+  assert.match(debate, /usePersistentState\("debate\.running"/);
+  assert.doesNotMatch(debate, /useEffect\(\(\) => \(\) => .*abort/);
   assert.doesNotMatch(debate, />存入沉淀</);
 });
 

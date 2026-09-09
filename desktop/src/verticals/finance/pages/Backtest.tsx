@@ -10,25 +10,31 @@ import { ReportHistory } from "@/components/ui/ReportHistory";
 import { backend, friendlyAgentError } from "@/lib/backend";
 import { addNote, loadNotes, type Note } from "@/lib/notes";
 import { useAiPage } from "../../../core/ai/pageContext";
+import { usePersistentState } from "@/lib/persistentState";
 
 interface Message { id: string; role: "user" | "agent"; content: string }
 // #34：明文局域网页面不提供 crypto.randomUUID；这里只生成 UI 标识，不作为鉴权凭据。
 const id = () => `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 const session = () => `bt-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`.slice(0, 24);
+let activeBacktestController: AbortController | null = null;
 
 export function Backtest() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState("");
-  const [running, setRunning] = useState(false);
+  const [messages, setMessages] = usePersistentState<Message[]>("backtest.messages", []);
+  const [draft, setDraft] = usePersistentState("backtest.draft", "");
+  const [running, setRunning] = usePersistentState("backtest.running", false);
   const [notes, setNotes] = useState<Note[]>(loadNotes);
-  const [archiveError, setArchiveError] = useState("");
-  const [lastReport, setLastReport] = useState("");
-  const sessionRef = useRef(session());
-  const abortRef = useRef<AbortController | null>(null);
+  const [archiveError, setArchiveError] = usePersistentState("backtest.archive-error", "");
+  const [lastReport, setLastReport] = usePersistentState("backtest.last-report", "");
+  const [sessionId, setSessionId] = usePersistentState("backtest.session", session);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages, running]);
-  useEffect(() => () => { abortRef.current?.abort(); }, []);
+  useEffect(() => {
+    if (running && !activeBacktestController) {
+      setRunning(false);
+      setMessages((rows) => [...rows, { id: id(), role: "agent", content: "上次回测在页面刷新时中断；此前对话已保留，可以继续发送。" }]);
+    }
+  }, []);
   useAiPage({
     key: "backtest-agent", title: "回测 Agent",
     context: lastReport || "回测 Agent：先通过对话厘清假设与规则，再调用真实回测工具，完成后自动生成并归档报告。",
@@ -36,20 +42,21 @@ export function Backtest() {
   });
 
   const reset = () => {
-    abortRef.current?.abort();
-    sessionRef.current = session();
+    activeBacktestController?.abort();
+    activeBacktestController = null;
+    setSessionId(session());
     setMessages([]); setDraft(""); setRunning(false); setArchiveError(""); setLastReport("");
   };
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || running) return;
+    if (!text || running || activeBacktestController) return;
     setDraft(""); setArchiveError(""); setRunning(true);
     setMessages((m) => [...m, { id: id(), role: "user", content: text }]);
     const ac = new AbortController();
-    abortRef.current = ac;
+    activeBacktestController = ac;
     try {
-      const out = await backend.guidedTool("backtest", sessionRef.current, text, ac.signal);
+      const out = await backend.guidedTool("backtest", sessionId, text, ac.signal);
       if (ac.signal.aborted) return;
       if (out.status === "needs_input") {
         setMessages((m) => [...m, { id: id(), role: "agent", content: out.message }]);
@@ -70,7 +77,7 @@ export function Backtest() {
         id: id(), role: "agent", content: `这轮没有跑起来：${friendlyAgentError(e)}`,
       }]);
     } finally {
-      if (abortRef.current === ac) { abortRef.current = null; setRunning(false); }
+      if (activeBacktestController === ac) { activeBacktestController = null; setRunning(false); }
     }
   };
 
