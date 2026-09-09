@@ -44,12 +44,11 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npm run build
+          npm run prepare:pages
           cd ../integrations/vibe-astock/frontend
           VITE_API_URL="${{ vars.VITE_ASTOCK_API_URL }}" npm run build -- --base=/Winter-reaserch/astock/
           mkdir -p ../../../frontend/dist/astock
           cp -r dist/* ../../../frontend/dist/astock/
-          cd ../../../frontend
-          cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
