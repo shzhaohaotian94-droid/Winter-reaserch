@@ -191,6 +191,8 @@ export const FETCH_ENV_KEYS = [...BASE_ENV_KEYS, "HTTP_PROXY", "HTTPS_PROXY", "N
   "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"];
 /** Codex 子进程的最小环境 = 取数环境 + 显式注入的 CODEX_HOME(由 codexEnvFor 给出)+ 按 provider 注入的 API key;**不透传用户 shell 的 CODEX_HOME / CODEX_API_KEY**(v2.1 §5 ②:不碰 ~/.codex) */
 export const CODEX_ENV_KEYS = [...FETCH_ENV_KEYS];
+/** Windows 的 Python 默认可能使用本地代码页，中文公司名/单位写 stdout 时会触发 UnicodeEncodeError。 */
+export const PYTHON_UTF8_ENV = { PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" } as const;
 
 export const DEFAULT_PROVIDER: ProviderProfile = { name: "openai", wire_api: "responses", base_url: null, env_key: "OPENAI_API_KEY", auth: "chatgpt_login" };
 
@@ -340,7 +342,8 @@ function pickEnv(keys: string[], extra: Record<string, string>, source: NodeJS.P
   return { ...env, ...extra };
 }
 export const codexEnv = (extra: Record<string, string> = {}, source: NodeJS.ProcessEnv = process.env) => pickEnv(CODEX_ENV_KEYS, extra, source);
-export const fetchEnv = (extra: Record<string, string> = {}, source: NodeJS.ProcessEnv = process.env) => pickEnv(FETCH_ENV_KEYS, extra, source);
+export const fetchEnv = (extra: Record<string, string> = {}, source: NodeJS.ProcessEnv = process.env) =>
+  pickEnv(FETCH_ENV_KEYS, { ...PYTHON_UTF8_ENV, ...extra }, source);
 /**
  * Codex 子进程环境:显式 CODEX_HOME = 产品自己的目录;provider.auth=api_key 且环境里有 env_key 时注入为 CODEX_API_KEY(值不落盘);
  * chatgpt_login 则依赖 CODEX_HOME 内的登录态。代码不假设任何一种登录方式(v2.1 §5 ⑤)。

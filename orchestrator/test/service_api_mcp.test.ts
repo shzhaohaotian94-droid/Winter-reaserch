@@ -118,7 +118,7 @@ extra=json.loads(a[a.index('--args')+1]) if '--args' in a else {}
 os.makedirs(os.path.join(out,'raw'),exist_ok=True); open(os.path.join(out,'raw','fake.json'),'w').write('{}')
 envs={k:os.environ.get(k) for k in ('IWENCAI_API_KEY','VRA_SEC_CONTACT','OPENAI_API_KEY','MY_SECRET_TOKEN','VRA_ALLOW_INSECURE_TLS')}
 env={"script":ep,"symbol":sym,"market":"SZ","status":"ok","fetched_at":"2026-01-01T00:00:00+08:00","primary_source":"fake","used_sources":["fake"],"evidence":[{"id":"ev-abcdef","symbol":sym,"market":"SZ","field":"f","value":1,"unit":"个","currency":"n/a","period":"2026-01-01","as_of":"2026-01-01","source":"fake","endpoint":ep,"fetched_at":"2026-01-01T00:00:00+08:00","adjustment":"not_applicable","raw_ref":"raw/fake.json"}],"extra":{"args":extra,"envs":envs},"errors":[],"missing":[]}
-json.dump(env, open(os.path.join(out,'fetch',ep+'.json'),'w')); print(json.dumps(env)); sys.stderr.write('token=abc123 https://x/y?key=SECRET\\n'); sys.exit(0)
+json.dump(env, open(os.path.join(out,'fetch',ep+'.json'),'w')); print(json.dumps(env, ensure_ascii=False)); sys.stderr.write('token=abc123 https://x/y?key=SECRET\\n'); sys.exit(0)
 `);
   const dataRoot = path.join(repo, ".local");
   fs.mkdirSync(path.join(dataRoot, "runs", "r1", "stages"), { recursive: true });
@@ -439,7 +439,9 @@ test("service:startResearch 立即返回相对路径;子进程最小环境(resea
     VRA_TASK_OBJECTIVE: "上一条请求的关注点", VRA_TASK_REPORT_IDS: "a".repeat(32),
     VRA_TASK_REPORT_REVISIONS: JSON.stringify({ ["a".repeat(32)]: "b".repeat(64) }),
     AWS_SECRET_ACCESS_KEY: "leak", GITHUB_TOKEN: "leak", CODEX_API_KEY: "leak", HTTPS_PROXY: "p" });
-  assert.deepEqual(Object.keys(env).sort(), ["HOME", "HTTPS_PROXY", "OPENAI_API_KEY", "PATH", "VRA_SEC_CONTACT"]);
+  assert.deepEqual(Object.keys(env).sort(), ["HOME", "HTTPS_PROXY", "OPENAI_API_KEY", "PATH", "PYTHONIOENCODING", "PYTHONUTF8", "VRA_SEC_CONTACT"]);
+  assert.equal(env.PYTHONIOENCODING, "utf-8");
+  assert.equal(env.PYTHONUTF8, "1");
   assert.throws(() => startResearch(ctx, { symbol: "300308", market: "XX" }), (e: unknown) => e instanceof ServiceError && e.code === "bad_market");
   assert.throws(() => startResearch(ctx, { symbol: "300308", stages: ["nope"] }), (e: unknown) => e instanceof ServiceError && e.code === "bad_stage");
   assert.throws(() => startResearch(ctx, { symbol: "300308", company_name: `中际旭创\n${"x".repeat(80)}` }), (e: unknown) => e instanceof ServiceError && e.code === "bad_company_name");

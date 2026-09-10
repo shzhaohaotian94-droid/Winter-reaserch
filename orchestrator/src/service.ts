@@ -15,7 +15,7 @@ import { assistantTurn } from "./assistant_turn.ts";
 import { lightChatTurn } from "./light_chat.ts";
 import type { AssistantTool, ToolReceipt } from "./assistant_bridge.ts";
 
-import { FETCH_ENV_KEYS, RUN_ID_RE, stages as packStages, fetchEnv } from "./config.ts";
+import { FETCH_ENV_KEYS, PYTHON_UTF8_ENV, RUN_ID_RE, stages as packStages, fetchEnv } from "./config.ts";
 import { researchFailure } from "./research_failure.ts";
 import { runAlerts, InsufficientRunsError, type AlertDiff } from "./alerts.ts";
 import { NOFOLLOW_FLAG, nowIso, readJsonIfExists } from "./fsutil.ts";
@@ -150,7 +150,7 @@ const rel = (ctx: Pick<ServiceContext, "dataRoot">, p: string) => path.relative(
 
 /** 研究子进程 / 批量子进程的最小环境:基础 + VRA_* + provider 的 env_key(若设置);不透传其它 *KEY* / *TOKEN* */
 export function researchEnv(ctx: Pick<ServiceContext, "providerEnvKey">, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
-  const out: Record<string, string> = {};
+  const out: Record<string, string> = { ...PYTHON_UTF8_ENV };
   for (const k of FETCH_ENV_KEYS) if (env[k] !== undefined) out[k] = env[k] as string;
   const requestScoped = new Set(["VRA_TASK_OBJECTIVE", "VRA_TASK_REPORT_IDS", "VRA_TASK_REPORT_REVISIONS", "VRA_RESEARCH_CONTROL_TOKEN"]);
   for (const [k, v] of Object.entries(env)) if (k.startsWith("VRA_") && !requestScoped.has(k) && v !== undefined) out[k] = v;
