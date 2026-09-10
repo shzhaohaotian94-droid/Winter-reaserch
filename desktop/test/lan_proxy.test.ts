@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { createServer } from "vite";
 
@@ -9,7 +8,7 @@ test("#34 LAN 默认为关，仅同源请求可被归一化，跨站请求不得
   const previous = process.env.VRA_LAN;
   const previousToken = process.env.VRA_API_TOKEN;
   process.env.VRA_API_TOKEN = "synthetic-lan-proxy-test-token";
-  const root = fileURLToPath(new URL("../", import.meta.url));
+  const root = process.cwd();
   let seen = 0;
   let forwardedOrigin: string | undefined;
   let forwardedToken: string | undefined;
