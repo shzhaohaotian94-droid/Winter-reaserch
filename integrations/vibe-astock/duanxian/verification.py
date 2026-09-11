@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+from duanxian.paths import data_path
 from typing import Callable, Optional
 
 # 方向的含义：预期这个读数明天往哪走
@@ -275,7 +276,7 @@ _EXTRACT_SKELETON = """{
 }"""
 
 
-def extract_items(llm, focus_md: str, phase: str = "") -> list[dict]:
+def extract_items(llm, focus_md: str, phase: str = "", *, strict: bool = False) -> list[dict]:
     """从已产出的复盘结论里，提炼 2-5 条明日可核验条件。
 
     失败返回空列表 —— 验证条件是增强，不该拖垮整条复盘。
@@ -327,12 +328,14 @@ def extract_items(llm, focus_md: str, phase: str = "") -> list[dict]:
         from .structured import invoke_json_schema
 
         _, obj = invoke_json_schema(
-            llm, prompt, _Items, lambda o: "", "验证条件抽取", _EXTRACT_SKELETON,
+            llm, prompt, _Items, lambda o: "", "验证条件抽取", _EXTRACT_SKELETON, strict=strict,
         )
         if obj is None:
             return []
         return [it.model_dump() for it in obj.items]
-    except Exception:  # noqa: BLE001  抽不出来就不给，不影响复盘主流程
+    except Exception:  # noqa: BLE001  旧工作流允许增强缺失；严格复盘必须出声
+        if strict:
+            raise
         return []
 
 
@@ -340,7 +343,7 @@ import os
 
 from .util import atomic_write_json
 
-_USER_DIR = os.path.expanduser("~/.duanxian-agents/verification")
+_USER_DIR = data_path("verification")
 _USER_SCHEMA = 1
 
 

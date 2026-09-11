@@ -28,10 +28,11 @@ import myreports as mr
 import firstboard
 import watchtower
 
-app = FastAPI(title="Vibe-Research API", version="0.1.3")
+from product_version import PRODUCT_NAME, PRODUCT_VERSION
 
-# 每半小时后台刷新持仓数据
-pf.start_scheduler(1800)
+app = FastAPI(title=PRODUCT_NAME, version=PRODUCT_VERSION)
+
+# 迁入的旧持仓仅供显式导入；本产品持仓来自交易日志，不启动旧持仓后台写入。
 
 # CORS：默认放开（本地自托管友好）；公网部署时用 VR_ALLOW_ORIGINS 收紧成白名单。
 #   例：VR_ALLOW_ORIGINS="https://myhost"  （逗号分隔多个）
@@ -72,7 +73,7 @@ def _validate(code: str) -> str:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "vibe-research-api", "version": "0.1.3"}
+    return {"ok": True, "service": "vibe-astock", "version": PRODUCT_VERSION}
 
 
 class LLMConfig(BaseModel):
@@ -281,12 +282,27 @@ def monitor_snapshot(watch: str = Query("")):
     """每日盯盘快照：持仓/自选/500亿大票异动/三板+/昨日成交前十 + 异动事件流。
 
     后端常驻线程盘中 3 秒轮询（腾讯 L1 快照），本接口只读内存、毫秒级返回——前端可放心
-    3 秒轮询。watch 参数=前端本地自选股（逗号分隔 6 位代码），并入监控池下一轮生效。
+    3 秒轮询。watch 参数只筛选返回数据；名单通过 POST /api/monitor/watch 按页面独立注册，下一轮生效。
     """
-    codes = [c.strip() for c in watch.split(",") if c.strip()]
-    watchtower.set_watch(codes)
+    codes = {c.strip() for c in watch.split(",") if c.strip()}
     watchtower.ensure_started()
-    return {"data": watchtower.get_snapshot()}
+    snap = watchtower.get_snapshot()
+    return {"data": {**snap, "watchlist": [r for r in snap.get("watchlist", []) if r.get("code") in codes]}}
+
+
+class MonitorWatchInput(BaseModel):
+    client_id: str
+    codes: list[str]
+
+
+@app.post("/api/monitor/watch")
+def monitor_watch(body: MonitorWatchInput):
+    try:
+        watchtower.set_client_watch(body.client_id, body.codes)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    watchtower.ensure_started()
+    return {"data": {"ok": True}}
 
 
 @app.get("/api/market/first-board")
@@ -577,12 +593,26 @@ def dragon_tiger(code: str = Query(...)):
         raise HTTPException(502, f"龙虎榜异常：{e}") from e
 
 
+@app.get("/api/lockup-calendar")
+def lockup_calendar(window: str = Query("upcoming", pattern="^(upcoming|recent)$")):
+    """Ten-day public unlock calendar; no watchlist is received."""
+    try:
+        from duanxian.util import china_now
+        day = china_now().strftime("%Y-%m-%d")
+        return {"data": _cached("lockup-calendar", day + window, 1800,
+                               lambda: astock.lockup_calendar(window, day))}
+    except Exception as exc:
+        raise HTTPException(502, "解禁日历取数失败，无法判断有无事件，请稍后重试") from exc
+
+
 @app.get("/api/lockup")
 def lockup(code: str = Query(...)):
     """限售解禁日历：历史解禁 + 未来 90 天待解禁（东财）。缓存 30 分钟。"""
     code = _validate(code)
     try:
-        return {"data": _cached("lockup", code, 1800, lambda: astock.lockup_expiry(code))}
+        from duanxian.util import china_now
+        day = china_now().strftime("%Y-%m-%d")
+        return {"data": _cached("lockup", code + day, 1800, lambda: astock.lockup_expiry(code, day))}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"解禁日历异常：{e}") from e
 
