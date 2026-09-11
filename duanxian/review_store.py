@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from duanxian.paths import data_path
 import html
 import json
 import os
 import re
 import uuid
+import threading
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -14,7 +17,7 @@ from . import reflection
 from .roles import ROLES
 from .util import china_now, is_degraded_report, safe_join
 
-DIR = os.path.expanduser("~/.duanxian-agents/reviews")
+DIR = data_path("reviews")
 
 REJECT_DIR = os.path.join(DIR, "_rejected")
 
@@ -59,15 +62,60 @@ def _read(path: str) -> dict | None:
         return None
 
 
+_SAVE_MUTEX = threading.RLock()
+
+
+@contextmanager
+def _save_lock():
+    """One owner across API threads and CLI processes, released on crash."""
+    os.makedirs(DIR, exist_ok=True)
+    with _SAVE_MUTEX, open(os.path.join(DIR, ".save.lock"), "a+b") as lock:
+        if os.name == "posix":
+            import fcntl
+            fcntl.flock(lock, fcntl.LOCK_EX)
+        else:
+            import msvcrt
+            if os.fstat(lock.fileno()).st_size == 0:
+                lock.write(b"0")
+                lock.flush()
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            yield
+        finally:
+            if os.name == "posix":
+                fcntl.flock(lock, fcntl.LOCK_UN)
+            else:
+                lock.seek(0)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+
+
 def save(payload: dict, date: str) -> SaveResult:
+    with _save_lock():
+        return _save_unlocked(payload, date)
+
+
+def _save_unlocked(payload: dict, date: str) -> SaveResult:
     """写 `<date>.json` + `latest.json`。不可用产物**不覆盖**已有的可用产物。"""
     os.makedirs(DIR, exist_ok=True)
     dated = safe_join(DIR, f"{date}.json")
     latest = safe_join(DIR, "latest.json")
 
     if usable(payload):
+        # Validate every existing destination before replacing either file.
+        current = _read(latest)
+        if os.path.exists(latest):
+            current_date = (current.get("target_date") or current.get("trade_date")) if isinstance(current, dict) else None
+            if not isinstance(current_date, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", current_date):
+                raise ValueError("最近复盘索引损坏，请修复后重试；本次未覆盖报告")
+        old = _read(dated)
+        if old is not None:
+            versions = Path(DIR) / "_versions"
+            versions.mkdir(exist_ok=True)
+            _atomic_write(str(versions / f"{date}.{uuid.uuid4().hex}.json"), old)
         _atomic_write(dated, payload)
-        _atomic_write(latest, payload)
+        if not current or (current.get("target_date") or current.get("trade_date") or "") <= date:
+            _atomic_write(latest, payload)
         return SaveResult(True)
 
     kept: list[str] = []
@@ -83,8 +131,11 @@ def save(payload: dict, date: str) -> SaveResult:
     rejected = safe_join(REJECT_DIR, f"{date}.rejected-{stamp}.json")
     _atomic_write(rejected, payload)
 
+    # 把 AI 段留下的占位（含真实报错）带进 reason —— 只报「没跑通」用户无从下手（#9）
+    left = " ".join((payload.get("focus_md") or "").split())[:160]
     reason = (
         "本次复盘的「明天关注点」是空的（AI 环节没跑通）"
+        + (f"：{left}" if left else "")
         + (f"，已保留原有的 {'、'.join(kept)} 不被覆盖" if kept else "")
         + f"。产物另存 _rejected/{os.path.basename(rejected)} 可查"
     )
@@ -179,7 +230,7 @@ def serialize(final: dict, date: str, extra_warnings: list[str] | None = None) -
         "review_id": f"daily_{date}",
         "target_date": date,
         "trade_date": date,       # 兼容旧前端字段
-        "data_as_of": now,
+        "data_as_of": date + " 收盘（各项缺口见 warnings）",
         "generated_at": now,
         "warnings": warnings,
         "focus": final.get("focus_struct"),
@@ -187,6 +238,6 @@ def serialize(final: dict, date: str, extra_warnings: list[str] | None = None) -
         "emotion_metrics": final.get("emotion_metrics") or {},
         "market_facts": final.get("market_facts") or {},
         "macro_sector": macro,
-        "reflection": reflection.latest_reflection(),   # 反思闭环：上期命中回看
+        "reflection": reflection.latest_reflection(end=date),   # 反思闭环：上期命中回看
         "analysts": analysts,
     }
